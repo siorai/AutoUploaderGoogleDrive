@@ -1,6 +1,6 @@
 from __future__ import print_function
 import httplib2
-import os
+import ConfigParser, os 
 from sys import argv
 
 from httplib2 import Http
@@ -20,19 +20,24 @@ from pydrive.drive import GoogleDrive
 #Command arguments to test functionality, should be passed via torrent in future
 script, filename = argv
 
+#Instantiates the config parser object to pull data from settings.ini
+config = ConfigParser.RawConfigParser(allow_no_value=False)
+config.readfp(open('settings.ini'))
+
+
 #variables needed by Google API for auth
 scopes = ['https://www.googleapis.com/auth/drive'] 
-client_email = 'client_email_as_per_account_creation'
+client_email = config.get("credentials", "client_email") #pulled from settings.ini
 
 #Instantiates the ServiceAccountCredential object from oauth2client
 #from json file given upon ServiceAccount creation via Google Developers Console
 #requires the /path/to/json and scopes to be defined.
 #json file name cannot be changed as file's encryption is tied to file name.
 credentials = ServiceAccountCredentials.from_json_keyfile_name(
-    '/path/to/json/file/created_when_Service_Account_is_made.json', scopes=scopes)
+    config.get("credentials", "keyfile"), scopes=scopes) #pulled from settings.ini
 
 #Method for telling Google Drive's api which user account to access and store files to.
-delegated_credentials = credentials.create_delegated('user@domain.com')
+delegated_credentials = credentials.create_delegated(config.get("credentials", "delegated_email")) #pulled from settings.ini
 
 http = delegated_credentials.authorize(httplib2.Http())
 
