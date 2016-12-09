@@ -86,7 +86,7 @@ mildly, refresh tokens are... *weird*.
 
 Here's what Google has to say about them: 
 
-::
+
  
      "Note: Save refresh tokens in secure long-term storage and continue to
     use them as long as they remain valid. Limits apply to the number of
@@ -95,7 +95,7 @@ Here's what Google has to say about them:
     requests enough refresh tokens to go over one of the limits, older refresh
     tokens stop working."
    
-:: 
+
 
 There's no telling how long a refresh token will remain active. Plus, it means
 that the application has to make calls to the API in regular intervals just to
