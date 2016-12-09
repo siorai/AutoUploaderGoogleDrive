@@ -1,12 +1,19 @@
+""" Library for uploading functions
+
+"""
+
+__author__ = 'siorai@gmail.com (Paul Waldorf)'
+
+
 from __future__ import print_function
-import ConfigParser, os 
+import ConfigParser, os, logging 
 from sys import argv
 
 from apiclient import discovery
 from AutoUpload.settings import keyfile, client_email, delegated_email #import settings needed to interact with google api
-import logging
 
-from oauth2client.service_account import ServiceAccountCredentials
+
+from oauth2client.service_account import ServiceAccountCredentials # service account credentials function
 
 #Pydrive libraries to simplify wrapping and calls of the google API
 from pydrive.auth import GoogleAuth
@@ -41,7 +48,15 @@ drive = GoogleDrive(gauth)
 
 #Function for uploading filename set in argv when executed
 def upload(filename):
-
+    """ Function for sending 'filename' to Google Drive
+    
+    Args:
+      filename: full path/to/file to be uploaded. 
+      
+    Returns:
+      Nothing
+    
+    """
     filesize = os.path.getsize(filename) # gets file size
     FileTitle = os.path.basename(filename) # removes local directory and returns name of file
     #print('File %s is %s bytes total' % (FileTitle, filesize)) # prints name of file and bytesize
@@ -55,4 +70,7 @@ def upload(filename):
                                  'role': 'reader'}) #sets permissions so anyone can read
  
     print(uploadtext['alternateLink']) #prints link to file
+    
+
+    
     
