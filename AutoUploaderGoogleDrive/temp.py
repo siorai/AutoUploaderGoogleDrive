@@ -10,7 +10,7 @@ import tempfile
 import logging
 
 #Module for the creation and population of a temporary W3C Validated HTML file
-#containing an a table to be compiled using AutoUpload.upload.encode_message 
+#containing an a table to be compiled using AutoUploaderGoogleDrive.upload.encode_message 
 
 
 logging.basicConfig(filename='/var/tmp/example.log',level=logging.DEBUG,format='%(asctime)s %(message)s')
@@ -61,14 +61,14 @@ def addentry(tempfilename, time_uploaded, file_size_bytes, name_of_file, direct_
   """ 
   Appends the temp html file by adding a row 
   in the table for each entry in the list supplied from 
-  AutoUpload.emailtest.get_filepaths
+  AutoUploaderGoogleDrive.emailtest.get_filepaths
   
   Args:
     tempfilename: path/to/temp/file/name
     time_uploaded: string returned from os.getenv('TR_TIME_LOCALTIME') 
     file_size_bytes: int returned from os.path.getsize
     name_of_file: string returned from list returned by
-    AutoUpload.emailtest.get_filepaths
+    AutoUploaderGoogleDrive.emailtest.get_filepaths
     direct_gdrive_link: direct link to file's location on Google Drive
   
   
