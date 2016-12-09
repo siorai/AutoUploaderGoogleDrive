@@ -10,7 +10,7 @@ from email.mime.text import MIMEText # For email encoding
 import logging
 
 from AutoUploaderGoogleDrive.settings import keyfile, client_email, delegated_email #import settings needed to interact with googleapi
-import AutoUploaderGoogleDriveerGoogleDrive.upload
+import AutoUploaderGoogleDrive.upload
 
 from oauth2client.service_account import ServiceAccountCredentials #ServiceLevelAccount 
 logging.basicConfig(filename='/var/tmp/example.log',level=logging.DEBUG,format='%(asctime)s %(message)s') #logging config

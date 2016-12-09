@@ -3,7 +3,7 @@ emailtest.py that contains a table listing all the files uploaded,
 the time the torrent was finished, and a link to that file
 """
 
-__author__ = 'siorai@gmail.com (Paul Waldorf)
+__author__ = 'siorai@gmail.com (Paul Waldorf)'
 
 import os
 import tempfile
