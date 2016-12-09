@@ -2,8 +2,6 @@
 
 """
 
-__author__ = 'siorai@gmail.com (Paul Waldorf)'
-
 
 from __future__ import print_function
 import ConfigParser, os, logging 
@@ -21,6 +19,9 @@ from pydrive.drive import GoogleDrive
 
 #Command arguments to test functionality, should be passed via torrent in future
 #script, filename = argv
+
+
+__author__ = 'siorai@gmail.com (Paul Waldorf)'
 
 logging.basicConfig(filename='/var/tmp/example.log',level=logging.DEBUG,format='%(asctime)s %(message)s')
 
