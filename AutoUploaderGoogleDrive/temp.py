@@ -9,11 +9,14 @@ import os
 import tempfile
 import logging
 
+from AutoUploaderGoogleDrive.settings import logfile
+
+
 #Module for the creation and population of a temporary W3C Validated HTML file
 #containing an a table to be compiled using AutoUploaderGoogleDrive.upload.encode_message 
 
 
-logging.basicConfig(filename='/var/tmp/example.log',level=logging.DEBUG,format='%(asctime)s %(message)s')
+logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
 
 #tempfilename = '/tmp/transmission.%s.html' % os.getpid()
 
