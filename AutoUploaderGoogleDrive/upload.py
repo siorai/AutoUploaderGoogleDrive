@@ -8,7 +8,7 @@ import ConfigParser, os, logging
 from sys import argv
 
 from apiclient import discovery
-from AutoUpload.settings import keyfile, client_email, delegated_email #import settings needed to interact with google api
+from AutoUploaderGoogleDrive.settings import keyfile, client_email, delegated_email #import settings needed to interact with google api
 
 
 from oauth2client.service_account import ServiceAccountCredentials # service account credentials function
