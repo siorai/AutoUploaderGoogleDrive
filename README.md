@@ -41,7 +41,7 @@ Google Drive account straight to your filesystem. Most(all?) seem to default
 around using the normal authentication flow written into the *apiclient* 
 from Google. 
 
-You can find details `here at on Google's Documentation Page <https://developers.google.com/identity/protocols/OAuth2/>`_ for specifics, but 
+You can find details [here at on Google's Documentation Page](https://developers.google.com/identity/protocols/OAuth2) for specifics, but 
 essentially it's a series of steps that have to be taken for any and all 
 requests made to the Google API to use any of it's services. 
 
