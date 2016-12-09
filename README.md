@@ -88,7 +88,7 @@ Here's what Google has to say about them:
 
 ::
  
-   "Note: Save refresh tokens in secure long-term storage and continue to
+     "Note: Save refresh tokens in secure long-term storage and continue to
     use them as long as they remain valid. Limits apply to the number of
     refresh tokens that are issued per client-user combination, and per user
     across all clients, and these limits are different. If your application
