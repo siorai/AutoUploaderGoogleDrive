@@ -11,7 +11,7 @@ setup(
         "oauth2client >= 4.0.0",
         "httplib2",
         "pydrive",
-    ]
+    ],
     entry_points={
       'console_scripts': [
           'AutoUploaderGoogleDrive = AutoUploaderGoogleDrive:main',
