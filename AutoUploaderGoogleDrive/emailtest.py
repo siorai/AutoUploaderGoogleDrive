@@ -9,8 +9,8 @@ from apiclient import discovery # Interacting with google API
 from email.mime.text import MIMEText # For email encoding 
 import logging
 
-from AutoUpload.settings import keyfile, client_email, delegated_email #import settings needed to interact with googleapi
-import AutoUpload.upload
+from AutoUploaderGoogleDrive.settings import keyfile, client_email, delegated_email #import settings needed to interact with googleapi
+import AutoUploaderGoogleDriveerGoogleDrive.upload
 
 from oauth2client.service_account import ServiceAccountCredentials #ServiceLevelAccount 
 logging.basicConfig(filename='/var/tmp/example.log',level=logging.DEBUG,format='%(asctime)s %(message)s') #logging config
@@ -30,10 +30,10 @@ def main():
     service = discovery.build('gmail', 'v1', http=http) #defines the api service
     
     sender_email = delegated_email # self email, will make this a setting later
-    bt_name = os.getenv('TR_TORRENT_NAME', 'AutoUpload') # fetches torrent name env var
+    bt_name = os.getenv('TR_TORRENT_NAME', 'AutoUploaderGoogleDrive') # fetches torrent name env var
     bt_time = os.getenv('TR_TIME_LOCALTIME')
     bt_app = os.getenv('TR_APP_VERSION')
-    bt_dir = os.getenv('TR_TORRENT_DIR', '/var/lib/transmission/downloads/AutoUpload/')
+    bt_dir = os.getenv('TR_TORRENT_DIR', './AutoUploaderGoogleDriveerGoogleDrive/')
     bt_hash = os.getenv('TR_TORRENT_HASH')
     bt_id = os.getenv('TR_TORRENT_ID')
     
