@@ -1,4 +1,3 @@
-# AutoUploaderGoogleDrive
 AutoUploaderGoogleDrive
 =======================
 
@@ -9,8 +8,30 @@ What's it all about?
 finished files after torrent completion and send them to a specific Google 
 Drive account.
 
+
+How's it work? (Or will when it's finished?)
+--------------------------------------------
+
+This script talks to the Google API and uploads the files it gets passed
+by the transmission-daemon. The script utilizes it's own oauth2 
+authentication flow based on the oauth2client.service_account library. 
+
+*AutoUploaderGoogleDrive* is unique in that it was designed from the ground
+up in order to access the Google API through a Service Level Account. Although
+I'll still add a normal authentication flow for folks that would rather use 
+the normal way of authentication. 
+
+Is accessing the google api via ServiceAccount authentication *really* needed?
+Probably not. But it has one seriously strong advantage in this partucular 
+usage case. 
+
+Complete elimination of user interaction whatsoever. Genuine set it and forget
+it functionality. Out of the box(... when it's completely of course).
+
+
+
 Alright then, so what'cha done so far?
--------------------
+--------------------------------------
 
 Glad you asked! 
 
@@ -21,8 +42,6 @@ Glad you asked!
   Some fairly outdated file that chances are has no real information and won't 
   be of any use to anyone at any given point in time.
   
-  
-
 - *AutoUploaderGoogleDRive/if_you_error_on_this_file_it_worked.json* 
   Placeholder for JSON keyfile to be replaced by one supplied from google when
   ServiceLevelAuthentication is activated
@@ -50,5 +69,8 @@ Glad you asked!
   and would print a link in the console to it's location on Google Drive
 
 
+
+Depends on Dependancies....
+---------------------------
 
 
