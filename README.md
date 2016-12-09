@@ -70,6 +70,7 @@ Here's an example of the normal auth flow:
 (Note1: App is passed a webpage address that is then given to the user to 
 visit and supply credentials, after which the user is given an authorization
 code which is then entered into the app)
+
 (Note2: The app repeats the same request)
 
 At this point the Google Authentication Server issues out an access token,
