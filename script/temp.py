@@ -1,3 +1,10 @@
+""" Libray for creating a temporary html file to be encoded by
+emailtest.py that contains a table listing all the files uploaded, 
+the time the torrent was finished, and a link to that file
+"""
+
+__author__ = 'siorai@gmail.com (Paul Waldorf)
+
 import os
 import tempfile
 import logging
@@ -11,7 +18,7 @@ logging.basicConfig(filename='/var/tmp/example.log',level=logging.DEBUG,format='
 #tempfilename = '/tmp/transmission.%s.html' % os.getpid()
 
 def setup_temp_file(tempfilename):
-  """
+  """ 
   Creates an html file with initial tags 
   to be ultimately encoded in the encode_message
   function. Sets up the initial table with 'Time
@@ -22,6 +29,10 @@ def setup_temp_file(tempfilename):
   Args:
    
     tempfilename: path/to/temp/file/name
+    
+  Returns:
+    
+    Nothing
   
   """
   print 'Building a tempfile:'
@@ -47,12 +58,12 @@ def setup_temp_file(tempfilename):
 
 
 def addentry(tempfilename, time_uploaded, file_size_bytes, name_of_file, direct_gdrive_link):
-  """ Appends the temp html file by adding a row 
+  """ 
+  Appends the temp html file by adding a row 
   in the table for each entry in the list supplied from 
   AutoUpload.emailtest.get_filepaths
   
   Args:
-  
     tempfilename: path/to/temp/file/name
     time_uploaded: string returned from os.getenv('TR_TIME_LOCALTIME') 
     file_size_bytes: int returned from os.path.getsize
@@ -78,12 +89,14 @@ def addentry(tempfilename, time_uploaded, file_size_bytes, name_of_file, direct_
   logging.info('Added %s entry to %s' % (name_of_file, tempfilename ))
 
 def finish_html(tempfilename):
-  """ Closes up the html temp file and closes the tags
+  """ 
+  Closes up the html temp file and closes the tags
   
   Args: 
-  
-	tempfilename: path/to/temp/file/name
-	
+    tempfilename: path/to/temp/file/name
+    
+  Returns:
+    Nothing
   """	
 
   append = open(tempfilename, 'a')
