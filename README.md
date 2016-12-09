@@ -1,19 +1,54 @@
 # AutoUploaderGoogleDrive
-Uploading Script to send completed torrents to Google Drive automatically
+AutoUploaderGoogleDrive
+=======================
 
-Goal: 
+What's it all about?
+--------------------
 
-To create a script that will automatically run at the time of torrent completion to upload to Google Drive.
+*AutoUploaderGoogleDrive* is a module currently in progress that will process
+finished files after torrent completion and send them to a specific Google 
+Drive account.
 
-Completed so far: 
+Alright then, so what'cha done so far?
+-------------------
 
-Command line script that uploads a file (as determined by an argument passed when run) to google drive. 
+Glad you asked! 
 
-Features to be implemented: 
+- *setup.py*
+  Setuptools script to add 'AutoUploaderGoogleDrive' to console commands
+  in order for the transmission-daemon to call it directly
+- *README.md*
+  Some fairly outdated file that chances are has no real information and won't 
+  be of any use to anyone at any given point in time.
+  
+  
 
-- Send email notifying user of upload completion, with stats such as speed, size, and folder, along with including a link to the relative files and/or folders 
+- *AutoUploaderGoogleDRive/if_you_error_on_this_file_it_worked.json* 
+  Placeholder for JSON keyfile to be replaced by one supplied from google when
+  ServiceLevelAuthentication is activated
+- *AutoUploaderGoogleDrive/emailtest.py*
+  Current main portion of the script, when supplied with correct credentials 
+  settings.py it'll either email a list containing all of the files that were
+  just downloaded from the torrent (if executed from the transmission-daemon)
+  otherwise just defaults to the PWD
+- *AutoUploaderGoogleDrive/temp.py*
+  Library for creating a temporary, W3C HTML 4.01 strict compliant file that 
+  contains a table that will populate with data when executed from 
+  AutoUploaderGoogleDriver.emailtest (Functional, but not implimented into 
+  emailtest just quite yet)
+- *AutoUploaderGoogleDrive/upload.py*
+  Library that handles the ServiceAccount object creation for uploading of
+  files to Google Drive. Newest implimentation of the upload function remains 
+  untested, however it was verified as working when executed alone via 
 
-- Detect archives in completed files and, if found, extract those contents, upload them to Google Drive, and then delete extracted contents leaving original archives intact for the purposes of seeding
+::
 
-- Detect and recognize individual files/extracted contents and upload them to the folders they should go, (possibly with just the file extension)
+    $ python upload.py /path/to/file.name
+    
+::
+
+  and would print a link in the console to it's location on Google Drive
+
+
+
 
