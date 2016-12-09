@@ -45,9 +45,9 @@ You can find details [here at on Google's Documentation Page](https://developers
 essentially it's a series of steps that have to be taken for any and all 
 requests made to the Google API to use any of it's services. 
 
-The problem, that all of these an additional level of account authorization
-that is granted based on either opening a page locally by calling a browser
-to open the 'Blahblah Application is requesting access to your Google Account.'
+The problem, is that all of these requests require an additional level of account 
+authorization that is granted based on either opening a page locally by calling a 
+browser to open the 'Blahblah Application is requesting access to your Google Account.'
 Where you supply your username and password to a browser window thus proving
 to Google's servers that you, the owner of the account, is granting access to 
 this program to your files or data contained in your account. 
