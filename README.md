@@ -63,7 +63,7 @@ Here's an example of the normal auth flow:
 |Hi Google! I'm Joe!         |  >>>>>  |                               |
 |                            |  <<<<<  | Oh yeah? Prove it.            | (note1)
 |Here's a code that proves it|  >>>>>  |                               | 
-|                            |  <<<<<  | Coo, have a pair of tokens    |
+|                            |  <<<<<  | Cool, have a pair of tokens   |
 
 
 
@@ -195,7 +195,7 @@ Glad you asked!
 
 
 
-Depends on Dependancies....
+Depends on Dependencies....
 ---------------------------
 
 
