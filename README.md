@@ -45,9 +45,9 @@ You can find details [here at on Google's Documentation Page](https://developers
 essentially it's a series of steps that have to be taken for any and all 
 requests made to the Google API to use any of it's services. 
 
-The problem, that all of these an additional level of account authorization
-that is granted based on either opening a page locally by calling a browser
-to open the 'Blahblah Application is requesting access to your Google Account.'
+The problem, is that all of these requests require an additional level of account 
+authorization that is granted based on either opening a page locally by calling a 
+browser to open the 'Blahblah Application is requesting access to your Google Account.'
 Where you supply your username and password to a browser window thus proving
 to Google's servers that you, the owner of the account, is granting access to 
 this program to your files or data contained in your account. 
@@ -86,16 +86,16 @@ mildly, refresh tokens are... *weird*.
 
 Here's what Google has to say about them: 
 
- ::
+
  
-   "Note: Save refresh tokens in secure long-term storage and continue to
+     "Note: Save refresh tokens in secure long-term storage and continue to
     use them as long as they remain valid. Limits apply to the number of
     refresh tokens that are issued per client-user combination, and per user
     across all clients, and these limits are different. If your application
     requests enough refresh tokens to go over one of the limits, older refresh
     tokens stop working."
    
- :: 
+
 
 There's no telling how long a refresh token will remain active. Plus, it means
 that the application has to make calls to the API in regular intervals just to
