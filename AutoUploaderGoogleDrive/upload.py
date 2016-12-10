@@ -8,7 +8,7 @@ import ConfigParser, os, logging
 from sys import argv
 
 from apiclient import discovery
-from AutoUploaderGoogleDrive.settings import keyfile, client_email, delegated_email, logfile #import settings needed to interact with google api
+from AutoUploaderGoogleDrive.settings import servicekeyfile, client_email, delegated_email, logfile, flow_to_use, scopes  #import settings needed to interact with google api
 
 
 from oauth2client.service_account import ServiceAccountCredentials # service account credentials function
@@ -24,9 +24,6 @@ from pydrive.drive import GoogleDrive
 __author__ = 'siorai@gmail.com (Paul Waldorf)'
 
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
-
-#variables needed by Google API for auth
-scopes = ['https://www.googleapis.com/auth/drive']  
 
 #Instantiates the ServiceAccountCredential object from oauth2client
 #from json file given upon ServiceAccount creation via Google Developers Console
