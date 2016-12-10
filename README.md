@@ -9,7 +9,7 @@ finished files after torrent completion and send them to a specific Google
 Drive account.
 
 
-How's it work? (Or will when it's finished?)
+How does it work? (Or will when it's finished?)
 --------------------------------------------
 
 This script talks to the Google API and uploads the files it gets passed
@@ -21,49 +21,49 @@ up in order to access the Google API through a Service Level Account. Although
 I'll still add a normal authentication flow for folks that would rather use 
 the normal way of authentication. 
 
-Is accessing the google api via ServiceAccount authentication *really* needed?
+Is accessing the Google API via ServiceAccount authentication *really* needed?
 Probably not. But it has one seriously strong advantage in this partucular 
 usage case. 
 
 Complete elimination of user interaction whatsoever. Genuine set it and forget
-it functionality. Out of the box(... when it's completed of course).
+it functionality. Out of the box (...when it's completed of course).
 
 For my own personal use, what I envision most others will also use it for, 
-is to sit on a remote server, ie a seedbox, where torrents can be added 
+is to sit on a remote server, i.e. a seedbox, where torrents can be added 
 remotely in any number of ways (remote-transmission for android, or the 
 web-gui, etc). 
 
-So what happens when you want to backup that hot new distro of slackware 
-that just got released onto your Google Drive for safe keeping? 
+So what happens when you want to backup that hot new distro of Slackware 
+that just got released onto your Google Drive for safekeeping? 
 
 Currently, there's a few tools around that will let you mount your 
-Google Drive account straight to your filesystem. Most(all?) seem to default
+Google Drive account straight to your filesystem. Most (all?) seem to default
 around using the normal authentication flow written into the *apiclient* 
 from Google. 
 
 You can find details [here at on Google's Documentation Page](https://developers.google.com/identity/protocols/OAuth2) for specifics, but 
 essentially it's a series of steps that have to be taken for any and all 
-requests made to the Google API to use any of it's services. 
+requests made to the Google API to use any of its services. 
 
 The problem, is that all of these requests require an additional level of account 
 authorization that is granted based on either opening a page locally by calling a 
 browser to open the 'Blahblah Application is requesting access to your Google Account.'
 Where you supply your username and password to a browser window thus proving
-to Google's servers that you, the owner of the account, is granting access to 
-this program to your files or data contained in your account. 
-This means it maintains a (imo at least) a reasonably high level of security 
+to Google's servers that you, the owner of the account, is granting
+this program access to your files or data contained in your account. 
+This means it maintains (IMO at least) a reasonably high level of security 
 to ensure the safety of your data. 
 
 Here's an example of the normal auth flow: 
 
-(Lets say we have a simple text editor that we'd like to load and save files from Google Drive.)
+(Let's say we have a simple text editor that we'd like to load and save files from Google Drive.)
 
 | El Grande Text Editor      | Request |           Das Google          |
 |:--------------------------:|:-------:|:-----------------------------:|
 |Hi Google! I'm Joe!         |  >>>>>  |                               |
 |                            |  <<<<<  | Oh yeah? Prove it.            | (note1)
 |Here's a code that proves it|  >>>>>  |                               | 
-|                            |  <<<<<  | Coo, have a pair of tokens    |
+|                            |  <<<<<  | Cool, have a pair of tokens   |
 
 
 
@@ -106,7 +106,7 @@ requests to the API, or otherwise constantly use it, the token granted
 by that auth code becomes invalid. 
 
 Numerous places in the oauth2 docs it talks about how developers should
-develop their applications in anticipation of those tokens suddenly, randmoly, 
+develop their applications in anticipation of those tokens suddenly, randomly, 
 and mysteriously, just stop working. 
 
 Now if I *had* to do that for the AutoUploaderGoogleDrive, well, I probably 
@@ -119,7 +119,7 @@ Creating and enabling a Service Account is currently a bit of a pain in the
 ass. And if I had to guess, I'd assume that's by design. 
 
 I'll go into the setup of those in a later point in time, but you essentially
-go through a process that involves creating your own google project, and 
+go through a process that involves creating your own Google project, and 
 logging into the Google Developers console, going into some security settings
 and creating the Service Account, and determining just what it can do (by 
 enabling or disabling specific individual Google APIs).  
@@ -127,26 +127,26 @@ enabling or disabling specific individual Google APIs).
 Right when you create it, it provides a link to a "projectnameblahblah.json" 
 keyfile. This file is the **only one** that is generator for the Service 
 Account. Forget to save it, or lose it, means you have to create a new Service
-Account, therefor generating a new keyfile you hopefully won't lose. 
+Account, therefore generating a new keyfile you hopefully won't lose. 
 
 Once you have the keyfile, you use it in your app, (along with using an 
 entirely different set of functions from the oauth2client library) the 
 token exchange gets reduced. 
 
-How reduced? Well from the end users point of view it essentially no longer
+How reduced? Well from the end user's point of view it essentially no longer
 exists.  There's still a token exchange of course, but Google's Authentication 
 Server gives up the token when it sees the Service Account Credential 
 **without further interaction from either the application or the owner 
 of the account**. 
 
 Does the token you recieve from Google's Authentication Server ever expire?
-Truthfully? I have no freaking idea. But what I -do- know, is  that it doesn't 
+Truthfully? I have no freaking idea. But what I *do* know, is that it doesn't 
 matter in the first place. Lose the token? Who cares. Get a new one with
 the credentials. Token expire? Get a new one. Favorite tracker go down for
 several weeks or even months and don't download any torrents for a while?
 Fear not! That credential will remain valid until you, the owner/administrator
 of that domain of Google Services pulls that credential from the developers
-console by disableing  that account. 
+console by disabling that account. 
 
 Set it. And forget it. 
 
@@ -195,7 +195,7 @@ Glad you asked!
 
 
 
-Depends on Dependancies....
+Depends on Dependencies....
 ---------------------------
 
 
