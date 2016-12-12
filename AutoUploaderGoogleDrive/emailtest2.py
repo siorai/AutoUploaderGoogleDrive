@@ -8,7 +8,7 @@ import base64
 from apiclient import discovery # Interacting with google API
 from email.mime.text import MIMEText # For email encoding 
 import logging
-from auth import Authorize
+from AutoUploaderGoogleDrive.auth import Authorize
 
 from AutoUploaderGoogleDrive.settings import servicekeyfile, client_email, delegated_email, logfile, scopes, flow_to_use #import settings needed to interact with googleapi
 import AutoUploaderGoogleDrive.upload
@@ -36,7 +36,7 @@ def main():
     bt_name = os.getenv('TR_TORRENT_NAME', 'AutoUploaderGoogleDrive') # fetches torrent name env var
     bt_time = os.getenv('TR_TIME_LOCALTIME')
     bt_app = os.getenv('TR_APP_VERSION')
-    bt_dir = os.getenv('TR_TORRENT_DIR', './AutoUploaderGoogleDriveerGoogleDrive/')
+    bt_dir = os.getenv('TR_TORRENT_DIR', './AutoUploaderGoogleDrive/')
     bt_hash = os.getenv('TR_TORRENT_HASH')
     bt_id = os.getenv('TR_TORRENT_ID')
     
