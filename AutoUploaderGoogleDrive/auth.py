@@ -27,8 +27,9 @@ def Authorize():
     flow = settings.flow_to_use
 
     if(flow == "ServiceAccountFlow"):
-      logging.debug("DEBUG: FLOW: Service Account Selected!")
+      logging.debug('DEBUG: FLOW: Service Account Selected')
       http = Service_Account_Credential()
+      logging.debug('DEBUG: SAC_FLOW: Service Account loaded')
       return http
     elif(flow == "Oauth2JSONFlow"):
       print("Oauth2JSON selected!")
@@ -48,9 +49,9 @@ def Service_Account_Credential():
     logging.debug('DEBUG: SAC_FLOW: Initializing credential from oauth2client.service_account')
     credentials = ServiceAccountCredentials.from_json_keyfile_name(keyfile, 
                         scopes=scopes)
-    logging.debug('Delegating credentials from settings')
+    logging.debug('DEBUG: SAC_FLOW: Delegating credentials from settings')
     delegated_credentials = credentials.create_delegated(settings.delegated_email)
-    logging.debug('Initializing authorized, delegated credentials object')
+    logging.debug('DEBUG: SAC_FLOW:Initializing authorized, delegated credentials object')
     http = delegated_credentials.authorize(httplib2.Http())
     
     return http
