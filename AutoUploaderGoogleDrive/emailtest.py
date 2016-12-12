@@ -18,9 +18,9 @@ import AutoUploaderGoogleDrive.upload
 
 from oauth2client.service_account import ServiceAccountCredentials #ServiceLevelAccount 
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s') #logging config
-credentials = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scopes=scopes) #ServiceAccount object
+credentials = ServiceAccountCredentials.from_json_keyfile_name(servicekeyfile, scopes=scopes) #ServiceAccount object
 delegated_credentials = credentials.create_delegated(delegated_email) #delegates which users files to access
-
+httplib2.debuglevel = 4
 
 
 def main():

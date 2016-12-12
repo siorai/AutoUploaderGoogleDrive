@@ -29,7 +29,7 @@ logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(m
 #from json file given upon ServiceAccount creation via Google Developers Console
 #requires the /path/to/json and scopes to be defined.
 #json file name cannot be changed as file's encryption is tied to file name.
-credentials = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scopes=scopes) #pulled from settings.py
+credentials = ServiceAccountCredentials.from_json_keyfile_name(servicekeyfile, scopes=scopes) #pulled from settings.py
 
 #Method for telling Google Drive's api which user account to access and store files to.
 delegated_credentials = credentials.create_delegated(delegated_email) #pulled from settings.py

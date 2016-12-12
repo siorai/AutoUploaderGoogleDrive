@@ -37,13 +37,13 @@ redirect_uri = "http://example.com/auth_return"
 ###############################
 
 #path to the local json that stores actual credential information
-servicekeyfile = "./service_account.json"
+servicekeyfile = "./GoogleDriveFtw!-fc20e0f60d1b.json"
 
 #client_email from Google Developers Console
-client_email = "client@iam.gserviceaccount.com"
+client_email = "seedbox@virtual-plexus-91702.iam.gserviceaccount.com"
 
 #user_email for delegation
-delegated_email = "user@domain.org"
+delegated_email = "paul@ladancesafe.org"
 
 ############################
 #[Normal JSON Oauth2 Creds]#
@@ -52,7 +52,7 @@ delegated_email = "user@domain.org"
 
 
 #path to normal oauth2 json credentials file
-oauth2keyfile = "./client_secrets.json"
+oauth2keyfile = "./GoogleDriveFtw!-fc20e0f60d1b.json"
 
 
 
@@ -60,5 +60,5 @@ oauth2keyfile = "./client_secrets.json"
 #[Normal WebServer Oauth2 Creds]#
 #################################
 
-oauth2web_id = "client_id_here"
-oauth2web_secret = "client_secret"
+oauth2web_id = "386863682522-logsdeojce8mjkhbn7tbg4010ngsadii.apps.googleusercontent.com"
+oauth2web_secret = "4JB4Stt5_KbDsciVMlp8iZSQ"
