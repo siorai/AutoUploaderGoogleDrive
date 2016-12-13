@@ -46,7 +46,7 @@ logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(m
 
 
 #Function for uploading filename set in argv when executed
-def upload(FileTitle):
+def upload(EachEntry, FileTitle):
     """ Function for sending 'filename' to Google Drive
     
     Args:
@@ -69,16 +69,19 @@ def upload(FileTitle):
     drive = GoogleDrive(gauth)
 
     #filesize = os.path.getsize(filename) # gets file size
-    #FileTitle = os.path.basename(filename) # removes local directory and returns name of file
-    #print('File %s is %s bytes total' % (FileTitle, filesize)) # prints name of file and bytesize
-    uploadtext = drive.CreateFile({'title': FileTitle}) # creates file remotely with FileTitle
-    uploadtext.SetContentFile(FileTitle) # sets content file
+    FileTitle = os.path.basename(EachEntry) # removes local directory and returns name of file
+    #print('File %s is %s bytes total' % (FileTitle, filesize)) # prints name of file and bytesiz
+    folderid = settings.googledrivedir
+    uploadtext = drive.CreateFile(
+                                 {'title': FileTitle,
+                                  "parents": [{"id": folderid}]}) # creates file remotely with FileTitle
+    uploadtext.SetContentFile(EachEntry) # sets content file
     uploadtext.Upload() # executes upload of content
     #print('title: %s, id: %s' % (uploadtext['title'], uploadtext['id'])) #prints title and ID
-    #permission = uploadtext.InsertPermission({
-    #                            'type': 'anyone',
-    #                             'value': 'anyone',
-    #                             'role': 'reader'}) #sets permissions so anyone can read
+    permission = uploadtext.InsertPermission({
+                                 'type': 'anyone',
+                                 'value': 'anyone',
+                                 'role': 'reader'}) #sets permissions so anyone can read
  
     #print(uploadtext['alternateLink']) #prints link to file
     direct_gdrive_link = uploadtext['alternateLink']

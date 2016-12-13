@@ -30,7 +30,7 @@ flow_to_use = "ServiceAccountFlow" #choices are "ServiceAccountFlow", "Oauth2JSO
 scopes = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.compose']
 logfile = "./AutoUpload.log"
 redirect_uri = "http://example.com/auth_return"
-
+googledrivedir = ['0B1ptDN6kTFPiZnMzRlNUOHVxcEE']
 
 ###############################
 #[Service Account Credentials]#

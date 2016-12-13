@@ -57,7 +57,7 @@ def main():
 
     email_subject = ("%s has finished downloading!") % bt_name # will make this a setting to change later as well
     
-    setup_message(list_of_files, bt_time)
+    #setup_message(list_of_files, bt_time)
     tempfilename = setup_message(list_of_files, bt_time)
     email_body = ("%s has finished downloading.%s is the local time. %s is the app version %s is the torrent directory. %s is the torrent hash. %s is the torrent id.Here's all the files %s") % (bt_name, bt_time, bt_app, bt_dir, bt_hash, bt_id, list_of_files) 
     test_message = encode_message(sender_email, sender_email, email_subject, email_body, tempfilename) #defines what to use for encode_message
@@ -106,7 +106,15 @@ def send_message(service, user_id, message):
 def get_filepaths(directory):
     """ Function for getting the full filepaths extrapolated from the env
     'TR_TORRENT_NAME' and 'TR_TORRENT_DIR' as passed from transmission
-    """
+    
+    Args: 
+        directory: directory containing files to be uploaded
+        
+    Returns:
+        file_paths: A list containing path names for all of the files to be uploaded
+
+     """
+
     file_paths = []
 
     for root, directories, files in os.walk(directory):
@@ -136,7 +144,7 @@ def setup_message(list_of_files, bt_time):
       logging.debug('TEMP: Setting filesize for %s to %s' % (EachEntry, FileSize))
       FileTitle = os.path.basename(EachEntry)
       logging.debug('TEMP: Setting FileTitle for %s to %s' % (EachEntry, FileTitle))
-      direct_gdrive_link = upload(EachEntry)	
+      direct_gdrive_link = upload(EachEntry, FileTitle)	
       addentry(tempfilename, bt_time, FileSize, FileTitle, direct_gdrive_link)
     finish_html(tempfilename)
     
