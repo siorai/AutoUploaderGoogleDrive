@@ -53,7 +53,8 @@ def upload(FileTitle):
       filename: full path/to/file to be uploaded. 
       
     Returns:
-      Nothing
+      direct_gdrive_link: the generated link to the file
+	that was uploaded
     
     """
 
