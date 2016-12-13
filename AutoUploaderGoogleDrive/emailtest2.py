@@ -10,11 +10,13 @@ from email.mime.text import MIMEText # For email encoding
 import logging
 from AutoUploaderGoogleDrive.auth import Authorize
 
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+
 from AutoUploaderGoogleDrive.settings import servicekeyfile, client_email, delegated_email, logfile, scopes, flow_to_use #import settings needed to interact with googleapi
-import AutoUploaderGoogleDrive.upload
-
-
-
+from upload import upload
+import AutoUploaderGoogleDrive.temp
+from AutoUploaderGoogleDrive.temp import setup_temp_file, addentry, finish_html
 
 #from oauth2client.service_account import ServiceAccountCredentials #ServiceLevelAccount 
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s') #logging config
@@ -33,10 +35,10 @@ def main():
     service = discovery.build('gmail', 'v1', http=http) #defines the api service
     
     sender_email = delegated_email # self email, will make this a setting later
-    bt_name = os.getenv('TR_TORRENT_NAME', 'AutoUploaderGoogleDrive') # fetches torrent name env var
+    bt_name = os.getenv('TR_TORRENT_NAME', 'testfiles') # fetches torrent name env var
     bt_time = os.getenv('TR_TIME_LOCALTIME')
     bt_app = os.getenv('TR_APP_VERSION')
-    bt_dir = os.getenv('TR_TORRENT_DIR', './AutoUploaderGoogleDrive/')
+    bt_dir = os.getenv('TR_TORRENT_DIR', '/var/lib/AutoUploaderGoogleDrive/AutoUploaderGoogleDrive/AutoUploaderGoogleDrive')
     bt_hash = os.getenv('TR_TORRENT_HASH')
     bt_id = os.getenv('TR_TORRENT_ID')
     
@@ -54,13 +56,16 @@ def main():
 
 
     email_subject = ("%s has finished downloading!") % bt_name # will make this a setting to change later as well
+    
+    setup_message(list_of_files, bt_time)
+    tempfilename = setup_message(list_of_files, bt_time)
     email_body = ("%s has finished downloading.%s is the local time. %s is the app version %s is the torrent directory. %s is the torrent hash. %s is the torrent id.Here's all the files %s") % (bt_name, bt_time, bt_app, bt_dir, bt_hash, bt_id, list_of_files) 
-    test_message = encode_message(sender_email, sender_email, email_subject, email_body) #defines what to use for encode_message
+    test_message = encode_message(sender_email, sender_email, email_subject, email_body, tempfilename) #defines what to use for encode_message
     sent_test = send_message(service, "me", test_message)
     
     sent_test
     
-def encode_message(sender, to, subject, message_text):
+def encode_message(sender, to, subject, message_text, tempfilename):
     """ Basic MIMEText encoding 
     
     Args:
@@ -72,7 +77,9 @@ def encode_message(sender, to, subject, message_text):
     Returns:
         A base64url encoded email object.
     """
-    message = MIMEText(message_text)        
+    readhtml = open(tempfilename, 'r')
+    html = readhtml.read()
+    message = MIMEText(html, 'html')        
     message['to'] = to
     message['from'] = sender
     message['subject'] = subject
@@ -108,7 +115,33 @@ def get_filepaths(directory):
           file_paths.append(filepath)
     return file_paths
 
+def setup_message(list_of_files, bt_time):
+    """ Setup creation of email text body
+   
+    Args:
+	list_of_files: the list of files to be sent
+	time_uploaded: time string returned from os.getenv('TR_TIME_LOCALTIME')
+	
+    Returns:
+	tempfilename as a string
+    """
+   
+    logging.debug('TEMP: TempFile initializing') 
+    tempfilename = '/var/tmp/transmissiontemp/transmission.%s.html' % os.getpid()
+    logging.debug('TEMP: TempFile pathname set to %s' % tempfilename)
+    setup_temp_file(tempfilename)
+    
+    for EachEntry in list_of_files:
+      FileSize = os.path.getsize(EachEntry)
+      logging.debug('TEMP: Setting filesize for %s to %s' % (EachEntry, FileSize))
+      FileTitle = os.path.basename(EachEntry)
+      logging.debug('TEMP: Setting FileTitle for %s to %s' % (EachEntry, FileTitle))
+      direct_gdrive_link = upload(EachEntry)	
+      addentry(tempfilename, bt_time, FileSize, FileTitle, direct_gdrive_link)
+    finish_html(tempfilename)
+    
+    return tempfilename
 
- 
+
 if __name__ == '__main__':
     main()

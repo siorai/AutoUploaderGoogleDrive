@@ -10,7 +10,7 @@ import tempfile
 import logging
 
 from AutoUploaderGoogleDrive.settings import logfile
-
+import upload
 
 #Module for the creation and population of a temporary W3C Validated HTML file
 #containing an a table to be compiled using AutoUploaderGoogleDrive.upload.encode_message 
@@ -18,7 +18,7 @@ from AutoUploaderGoogleDrive.settings import logfile
 
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
 
-#tempfilename = '/tmp/transmission.%s.html' % os.getpid()
+tempfilename = '/var/tmp/transmissiontemp/transmission.%s.html' % os.getpid()
 
 def setup_temp_file(tempfilename):
   """ 
@@ -39,8 +39,9 @@ def setup_temp_file(tempfilename):
   
   """
   print 'Building a tempfile:'
-  logging.info('Creating html file %s' % tempfilename)
+  logging.debug('TEMP: Creating html file %s' % tempfilename)
   htmlfile = open(tempfilename, 'w')
+  logging.debug('TEMP: %s created.' % tempfilename)
 
   message = """<!DOCTYPE HTML SYSTEM>
 <html>
@@ -56,7 +57,7 @@ def setup_temp_file(tempfilename):
 
   htmlfile.write(message)
   htmlfile.close()
-  logging.info('%s created.' % tempfilename)
+  logging.debug('%s created.' % tempfilename)
 
 
 
@@ -76,7 +77,7 @@ def addentry(tempfilename, time_uploaded, file_size_bytes, name_of_file, direct_
   
   
   """  
-  logging.info('Opening %s to add entry %s' % (tempfilename, name_of_file)) 
+  logging.debug('Opening %s to add entry %s' % (tempfilename, name_of_file)) 
   append = open(tempfilename, 'a')
   
   table_entry = """  
@@ -89,7 +90,7 @@ def addentry(tempfilename, time_uploaded, file_size_bytes, name_of_file, direct_
 
   append.write (table_entry)
   append.close()
-  logging.info('Added %s entry to %s' % (name_of_file, tempfilename ))
+  logging.debug('Added %s entry to %s' % (name_of_file, tempfilename ))
 
 def finish_html(tempfilename):
   """ 
@@ -110,7 +111,7 @@ def finish_html(tempfilename):
   
   append.write(finish_up)
   append.close()
-  logging.info('Wrapping up html in %s' % tempfilename )
+  logging.debug('Wrapping up html in %s' % tempfilename )
 
 
 
