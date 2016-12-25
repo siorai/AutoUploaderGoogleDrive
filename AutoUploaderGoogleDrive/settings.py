@@ -1,4 +1,4 @@
-"""
+""":
 Settings script containing all account related variables
 and customization options as they are become created
 through development.
@@ -30,20 +30,33 @@ flow_to_use = "ServiceAccountFlow" #choices are "ServiceAccountFlow", "Oauth2JSO
 scopes = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.compose']
 logfile = "./AutoUpload.log"
 redirect_uri = "http://example.com/auth_return"
-googledrivedir = ['0B1ptDN6kTFPiZnMzRlNUOHVxcEE']
+googledrivedir = ['googlefolderidhere']
+
+##################
+#[Email settings]#
+##################
+
+emailparameters = ['createdDate', 'title', 'alternateLink', 'md5Checksum', 'id', 'fileSize' ]
+"""
+Parameters to include in the email table. Customize as you see fit.
+"""
+emailSender = "email"
+emailTo = "email"
+deleteTmpHTML = False
+
 
 ###############################
 #[Service Account Credentials]#
 ###############################
 
 #path to the local json that stores actual credential information
-servicekeyfile = "./GoogleDriveFtw!-fc20e0f60d1b.json"
+servicekeyfile = "json"
 
 #client_email from Google Developers Console
-client_email = "seedbox@virtual-plexus-91702.iam.gserviceaccount.com"
+client_email = "gserviceaccount.com"
 
 #user_email for delegation
-delegated_email = "paul@ladancesafe.org"
+delegated_email = ""
 
 ############################
 #[Normal JSON Oauth2 Creds]#
@@ -52,7 +65,7 @@ delegated_email = "paul@ladancesafe.org"
 
 
 #path to normal oauth2 json credentials file
-oauth2keyfile = "./GoogleDriveFtw!-fc20e0f60d1b.json"
+oauth2keyfile = "json"
 
 
 
@@ -60,5 +73,5 @@ oauth2keyfile = "./GoogleDriveFtw!-fc20e0f60d1b.json"
 #[Normal WebServer Oauth2 Creds]#
 #################################
 
-oauth2web_id = "386863682522-logsdeojce8mjkhbn7tbg4010ngsadii.apps.googleusercontent.com"
-oauth2web_secret = "4JB4Stt5_KbDsciVMlp8iZSQ"
+oauth2web_id = ""
+oauth2web_secret = ""

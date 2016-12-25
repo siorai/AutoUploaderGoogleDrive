@@ -15,7 +15,7 @@ from AutoUploaderGoogleDrive.auth import Authorize
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-from AutoUploaderGoogleDrive.settings import servicekeyfile, client_email, delegated_email, logfile, scopes, flow_to_use, master_google_drive_folder #import settings needed to interact with googleapi
+from AutoUploaderGoogleDrive.settings import * #import settings needed to interact with googleapi
 from upload import upload
 import AutoUploaderGoogleDrive.temp
 from AutoUploaderGoogleDrive.temp import setup_temp_file, addentry, finish_html
@@ -26,6 +26,8 @@ logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(m
 #delegated_credentials = credentials.create_delegated(delegated_email) #delegates which users files to access
 
 http = Authorize()
+JSONResponseList = []
+
 
 def main(Folder=None):
     """Sends an email based on hard parameters as specified in encode_message 
@@ -54,32 +56,38 @@ def main(Folder=None):
     
     #pathtofilename = ([bt_dir, bt_name])
         full_file_paths = os.path.join(bt_dir, bt_name)
-        FilesDict = get_FilesDict(full_file_paths)       
+        FilesDict = getDirectoryStructure(full_file_paths)       
         
     except(AttributeError):
 
         full_file_paths = Folder
-        bt_name = Folder
-        list_of_files = get_filepaths(full_file_paths)
+        folderName = full_file_paths.rsplit(os.sep)
+        bt_name = folderName[-1]
+        FilesDict = getDirectoryStructure(full_file_paths)
 
     # for EachFile in list_of_files:
     #  logging.info('Starting upload of %s') % EachFile
     #  upload(EachFile)
 
-
+    uploadPreserve(FilesDict, JSONResponseList, Folder_ID=googledrivedir)
+    tempfilename = "/var/tmp/transmissiontemp/transmission.%s.%s.html" % (bt_name, os.getpid())
+    setup_temp_file(tempfilename)
+    for EachResponse in JSONResponseList:
+        addentry(tempfilename, EachResponse)
+    finish_html(tempfilename)
 
     email_subject = ("%s has finished downloading!") % bt_name # will make this a setting to change later as well
     
     #setup_message(list_of_files, bt_time)
-    Master = master_google_drive_folder
-    tempfilename = setup_message(list_of_files, bt_time, bt_name, Master_Folder_ID=Master)
-    email_body = ("%s has finished downloading.%s is the local time. %s is the app version %s is the torrent directory. %s is the torrent hash. %s is the torrent id.Here's all the files %s") % (bt_name, bt_time, bt_app, bt_dir, bt_hash, bt_id, list_of_files) 
-    test_message = encode_message(sender_email, sender_email, email_subject, email_body, tempfilename) #defines what to use for encode_message
+    
+
+    
+    test_message = encode_message(email_subject, tempfilename) #defines what to use for encode_messag
     sent_test = send_message(service, "me", test_message)
     
     sent_test
     
-def encode_message(sender, to, subject, message_text, tempfilename):
+def encode_message(subject, tempfilename, message_text=None):
     """ Basic MIMEText encoding 
     
     Args:
@@ -94,8 +102,8 @@ def encode_message(sender, to, subject, message_text, tempfilename):
     readhtml = open(tempfilename, 'r')
     html = readhtml.read()
     message = MIMEText(html, 'html')        
-    message['to'] = to
-    message['from'] = sender
+    message['to'] = emailTo
+    message['from'] = emailSender
     message['subject'] = subject
     return {'raw': base64.urlsafe_b64encode(message.as_string())}
 
@@ -129,7 +137,7 @@ def get_filepaths(directory):
 
      """
 
-    file_paths = {}
+    file_paths = []
 
     for root, directories, files in os.walk(directory):
       for filename in files:
@@ -137,29 +145,65 @@ def get_filepaths(directory):
           file_paths.append(filepath)
     return file_paths
 
-#def get_filesDict(directory):
-#    FilesDict = {}
-#    directory = directory.rstrip(os.sep)
-#    start = directory.rfind(os.sep) + 1
-#    for path, dirs, files in os.walk(directory):
-#        folders = path[start:].split(os.sep)
-#        subdir = dict.fromkeys(files)
-#        parent = reduce(dict.get, folders[:-1], FilesDict)
-#        parent[folders[-1]] = subdir
-#    return FilesDict
 
-def get_FilesDict(rootdir):
-  dir = {}
-  rootdir = rootdir.rstrip(os.sep)
-  start = rootdir.rfind(os.sep) + 1
-  for path, dirs, files in os.walk(rootdir):
-    folders = path[start:].split(os.sep)
-    subdir = dict.fromkeys(files)
-    parent = reduce(dict.get, folders[:-1], dir)
-    parent[folders[-1]] = subdir
-  return dir
+def uploadPreserve(FilesDict, JSONResponse, Folder_ID=None):
+    for FF in FilesDict:
+        i = FilesDict[FF]
+        try:
+            if i[0]:
+                Full_Path_To_File = os.path.join(i[1], FF)
+                response = uploadToGoogleDrive(Full_Path_To_File, FF, Folder_ID=Folder_ID)
+                JSONResponse.append(response)
+        except(KeyError):
+            #print("Folder found! Created %s") % i
+            subfolder = FilesDict[FF]
+            subfolder_id = createFolder(FF, parents=Folder_ID)
+            uploadPreserve(subfolder, JSONResponse, Folder_ID=subfolder_id)
+        
 
 
+def getDirectoryStructure(rootdir):
+    """
+    Creates a nested dictionary that represents the folder structure of rootdir
+    """
+    dir = {}
+    rootdir = rootdir.rstrip(os.sep)
+    start = rootdir.rfind(os.sep) + 1
+    for path, dirs, files in os.walk(rootdir):
+        try:
+            filepath = os.path.join(path, files)
+            folders = path[start:].split(os.sep)
+            subdir = dict.fromkeys(files, ['None', filepath])
+            parent = reduce(dict.get, folders[:-1], dir)
+            parent[folders[-1]] = subdir
+        except:
+            filepath = path 
+            folders = path[start:].split(os.sep)
+            subdir = dict.fromkeys(files, ['None', filepath])
+            parent = reduce(dict.get, folders[:-1], dir)
+            parent[folders[-1]] = subdir
+    return dir
+
+
+
+
+'''
+def setup_message2(FilesDict, bt_time, bt_name, Master_Folder_ID=None):
+    """ Sets up message preserving file structure
+
+    """
+    http = Authorize()
+    tempfilename = '/var/tmp/transmissiontemp/transmission.%s.%s.html' % (bt_name,os.getpid())
+    setup_temp_file(tempfilename)
+    Folder_ID = createFolder(bt_name, parents=Master_Folder_ID)
+    JSONResponse = []
+    uploadPreserve(FilesDict, JSONResponse, Folder_ID=Folder_ID)
+    for EachUpload in JSONResponse:
+'''            
+
+
+
+'''
 def setup_message(list_of_files, bt_time, bt_name, Master_Folder_ID=None):
     """ Setup creation of email text body
    
@@ -176,7 +220,8 @@ def setup_message(list_of_files, bt_time, bt_name, Master_Folder_ID=None):
     logging.debug('TEMP: TempFile pathname set to %s' % tempfilename)
     setup_temp_file(tempfilename)
     Folder_ID = createFolder(bt_name, parents=Master_Folder_ID)
-    
+'''
+""" 
     for EachEntry in list_of_files:
         #if os.path.isdir(EachEntry) == True:
         #    DirName = os.path.split(EachEntry)
@@ -194,7 +239,7 @@ def setup_message(list_of_files, bt_time, bt_name, Master_Folder_ID=None):
     finish_html(tempfilename)
     
     return tempfilename
-
+"""
 
 def uploadToGoogleDrive(EachEntry, FileTitle, Folder_ID=None, Public=None):
     http = Authorize()
@@ -206,9 +251,8 @@ def uploadToGoogleDrive(EachEntry, FileTitle, Folder_ID=None, Public=None):
     if Folder_ID:
         body['parents'] = [{'id' : Folder_ID}]
     media = MediaFileUpload(EachEntry, chunksize=1024*1024, resumable=True)
-    UploadIt = drive_api.files().insert(body=body, media_body=media).execute()
-    
-    return UploadIt
+    response = drive_api.files().insert(body=body, media_body=media).execute()
+    return response
 
 def createFolder(bt_name, parents=None):
     http = Authorize()
