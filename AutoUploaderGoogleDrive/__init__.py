@@ -3,7 +3,8 @@ import httplib2
 import base64
 import logging
 import argparse
-
+import re
+import time
 
 from sys import argv
 
@@ -15,10 +16,12 @@ from AutoUploaderGoogleDrive.auth import Authorize
 from AutoUploaderGoogleDrive.settings import *
 from AutoUploaderGoogleDrive.temp import *
 
-
-
+import rarfile
+from rarfile import Error, BadRarFile, NeedFirstVolume
 
 from email.mime.text import MIMEText
+
+
 
 
 class main(object):   
@@ -107,6 +110,38 @@ class main(object):
                 parent[folders[-1]] = subdir
         return dir
 
+    def autoExtract(self, directory):
+        for path, dirs, files in os.walk(directory):
+            for EachFile in files:
+                filepath = os.path.join(path, EachFile)
+                if rarfile.is_rarfile(filepath):
+                    logging.debug("UNRAR: Archive %s found." % filepath)
+                    try:
+                        logging.debug("UNRAR: Attemping extraction....")
+                        with rarfile.RarFile(filepath) as rf:
+                            startExtraction = time.time()
+                            rf.extractall(directory)
+                            timeToExtract = time.time() - startExtraction
+                            self.extractedFilesList.append(
+                                                    {
+                                                    'FileList': rf.namelist(),
+                                                    'TimeToUnrar': timeToExtract
+                                                     }
+                                                    )
+                            logging.debug("UNRAR: Extraction for %s took %s." % (filepath, timeToExtract))
+                    except: 
+                        logging.debug("Moving onto next file.")
+
+    def cleanUp(self):
+        logging.info("CLEANUP: Cleanup started. Deleting extracted files.")
+        DeleteFiles = self.extractedFilesList
+        for EachFile in DeleteFiles:
+            logging.info("CLEANUP: Deleting %s." % EachFile)
+            os.remove(EachFile)
+            logging.info("CLEANUP: Deleted %s successfully." % EachFile)
+        logging.info("CLEANUP: Cleanup completed.")
+
+
     def getIDs(self):
         service = self.serviceDrive
         IDs = service.files().generateIds().execute()
@@ -171,6 +206,8 @@ class main(object):
         response = service.users().messages().send(userId='me', body=message).execute()
         return response
 
+        
+
     def uploadPreserve(self, FilesDict, Folder_ID=None):
         """
         Uploads files in FilesDict preserving the local file structure
@@ -191,8 +228,12 @@ class main(object):
             try:
                 if i[0]:
                     fullPathToFile = os.path.join(i[1], FF)
-                    response = self.uploadToGoogleDrive(fullPathToFile, FF, Folder_ID=Folder_ID)
-                    self.JSONResponseList.append(response)
+                    refilter = re.compile('.*\\.r.*.*\\Z(?ms)')
+                    if refilter.match(fullPathToFile):
+                        logging.debug("%s skipped." % fullPathToFile)
+                    else:    
+                        response = self.uploadToGoogleDrive(fullPathToFile, FF, Folder_ID=Folder_ID)
+                        self.JSONResponseList.append(response)
             except(KeyError):
                 subfolder = FilesDict[FF]
                 subfolder_id = self.createFolder(FF, parents=Folder_ID)
@@ -211,8 +252,7 @@ class main(object):
         Returns:        
             Response in the form of JSON data from Google's REST.
 
-        """
-
+        """ 
         service = self.serviceDrive
         body = {
                 'title': FileTitle

@@ -24,6 +24,7 @@ from email.mime.text import MIMEText
 
 class main(object):    
     script, localFolder = argv
+    logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
     def __init__(self, localFolder=None):
         http = Authorize()
         if localFolder:
@@ -35,25 +36,33 @@ class main(object):
         self.extractedFilesList = []
         self.nonDefaultPermissions = nonDefaultPermissions
         try:
+            logging.debug('Attempting to pull information from daemon env')
             self.bt_name = os.getenv('TR_TORRENT_NAME')
+            logging.debug("Pulled bt_name successfully: %s" % self.bt_name)
             self.bt_time = os.getenv('TR_TIME_LOCALTIME')
+            logging.debug("Pulled bt_time successfully: %s" % self.bt_time)
             self.bt_app = os.getenv('TR_APP_VERSION')
-            self.bt_dir = os.getenv('TR_TORRENT_DIR', localFolder)
+            logging.debug("Pulled app_version successfully: %s" % self.bt_app)
+            self.bt_dir = os.getenv('TR_TORRENT_DIR')
+            logging.debug("Pulled Torrent Dir successfully: %s " % self.bt_dir)
             self.bt_hash = os.getenv('TR_TORRENT_HASH')
+            logging.debug("Pulled hash successfully: %s " % self.bt_hash)
             self.bt_id = os.getenv('TR_TORRENT_ID')
+            logging.debug("Pulled torrent_id successfully: %s" % self.bt_id)
             self.fullFilePaths = os.path.join(self.bt_dir, self.bt_name)
-            self.FilesDict = self.getDirectoryStructure(self.fullFilePaths)
+            logging.debug("Joined bt_dir and bt_name to get %s" % self.fullFilePaths)
+            self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
+            logging.debug("Creating dictionary of files: %s" % self.FilesDict)
+            logging.debug('Information pulled successfully')
         except(AttributeError):
-            
             self.fullFilePaths = self.localFolder
-                        
             self.folderName = self.fullFilePaths.rsplit(os.sep)
-            print(self.folderName)
+            logging.debug("Using %s" % self.folderName)
             self.bt_name = self.folderName[-2]
-            print(self.bt_name)
+            logging.debug("Using %s" % self.bt_name)
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
         
-        print(self.FilesDict)
+        logging.debug("Using %s as FilesDict" % self.FilesDict)
         self.autoExtract(self.fullFilePaths)
         self.uploadPreserve(self.FilesDict, Folder_ID=googledrivedir)
         tempfilename = '/var/tmp/transmissiontemp/transmission.%s.%s.html' % (self.bt_name, os.getpid())
@@ -64,7 +73,7 @@ class main(object):
         email_subject = ("%s has finished downloading.") % self.bt_name
         email_message = self.encodeMessage(email_subject, tempfilename)
         self.sendMessage(email_message)
-        print(self.extractedFilesList)
+        logging.debug("Contents of extractFilesList %s" % self.extractedFilesList)
 
     def createDirectoryStructure(self, rootdir):
         """
@@ -121,11 +130,6 @@ class main(object):
                             logging.debug("UNRAR: Extraction for %s took %s." % (filepath, timeToExtract))
                     except: 
                         logging.debug("Moving onto next file.")
-
-                    #except(BadRarFile):
-                    #    logging.debug("UNRAR: Archive %s not a RAR File." % filepath)
-                    #except(NeedFirstVolume):     
-                    #    logging.debug("UNRAR: Archive %s is multi volume, need first." % filepath)
 
     def cleanUp(self):
         logging.info("CLEANUP: Cleanup started. Deleting extracted files.")
