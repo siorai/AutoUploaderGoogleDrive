@@ -65,7 +65,6 @@ class main(object):
         email_message = self.encodeMessage(email_subject, tempfilename)
         self.sendMessage(email_message)
         print(self.extractedFilesList)
-        
 
     def createDirectoryStructure(self, rootdir):
         """
@@ -128,7 +127,14 @@ class main(object):
                     #except(NeedFirstVolume):     
                     #    logging.debug("UNRAR: Archive %s is multi volume, need first." % filepath)
 
-    def cleanUp
+    def cleanUp(self):
+        logging.info("CLEANUP: Cleanup started. Deleting extracted files.")
+        DeleteFiles = self.extractedFilesList
+        for EachFile in DeleteFiles:
+            logging.info("CLEANUP: Deleting %s." % EachFile)
+            os.remove(EachFile)
+            logging.info("CLEANUP: Deleted %s successfully." % EachFile)
+        logging.info("CLEANUP: Cleanup completed.")
 
 
     def getIDs(self):
