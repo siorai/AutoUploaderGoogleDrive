@@ -140,6 +140,22 @@ class main(object):
             logging.info("CLEANUP: Deleted %s successfully." % EachFile)
         logging.info("CLEANUP: Cleanup completed.")
 
+    def fetchTorrentFile(self, bt_name):
+        """
+        Fetches the Torrents file name to parse for sorting.
+
+        Args:
+            bt_name: string. Name of the torrent
+            
+        Returns:
+            filepath: /path/to/file to be parsed for trackerinfo
+        """
+        torrentFileDirectory = self.torrentFileDirectory
+        for path, dirs, files in os.walk(torrentFileDirectory):
+            for EachTorrent in files:
+                if bt_name in EachTorrent:
+                    filepath = os.path.join(path, EachTorrent)
+                    return filepath 
 
     def getIDs(self):
         service = self.serviceDrive
