@@ -20,6 +20,7 @@ Class for creation of an authorized credential object
     Authorized credentials object for api call
 """
 
+__author__ = 'siorai@gmail.com (Paul Waldorf)'
 
 def makeJSON():
     """
