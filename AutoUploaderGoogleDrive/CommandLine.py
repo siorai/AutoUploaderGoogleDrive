@@ -10,22 +10,28 @@ from sys import argv
 
 from apiclient import discovery
 from apiclient.http import MediaFileUpload
-from apiclient.http import HttpRequest as RequestHttp
 
 from AutoUploaderGoogleDrive.auth import Authorize
 from AutoUploaderGoogleDrive.settings import *
 from AutoUploaderGoogleDrive.temp import *
+from AutoUploaderGoogleDrive.Rules import *
 
 import rarfile
 from rarfile import Error, BadRarFile, NeedFirstVolume
 
 from email.mime.text import MIMEText
 
+__author__ = 'siorai@gmail.com (Paul Waldorf)'
 
 class main(object):    
     script, localFolder = argv
     logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
     def __init__(self, localFolder=None):
+        """
+        ........ does a lot......
+
+        ........ to be added soon.....
+        """
         http = Authorize()
         if localFolder:
             self.localFolder = localFolder
@@ -51,6 +57,9 @@ class main(object):
             logging.debug("Pulled torrent_id successfully: %s" % self.bt_id)
             self.fullFilePaths = os.path.join(self.bt_dir, self.bt_name)
             logging.debug("Joined bt_dir and bt_name to get %s" % self.fullFilePaths)
+            self.autoExtract(self.fullFilePaths)
+            updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+            self.destgoogledrivedir = updategoogledrivedir[1]
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
             logging.debug("Creating dictionary of files: %s" % self.FilesDict)
             logging.debug('Information pulled successfully')
@@ -60,11 +69,15 @@ class main(object):
             logging.debug("Using %s" % self.folderName)
             self.bt_name = self.folderName[-2]
             logging.debug("Using %s" % self.bt_name)
+            self.autoExtract(self.fullFilePaths)
+            updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+            logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
+            self.destgoogledrivedir = updategoogledrivedir[1]
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
         
         logging.debug("Using %s as FilesDict" % self.FilesDict)
         self.autoExtract(self.fullFilePaths)
-        self.uploadPreserve(self.FilesDict, Folder_ID=googledrivedir)
+        self.uploadPreserve(self.FilesDict, Folder_ID=self.destgoogledrivedir)
         tempfilename = '/var/tmp/transmissiontemp/transmission.%s.%s.html' % (self.bt_name, os.getpid())
         setup_temp_file(tempfilename)
         for EachEntry in self.JSONResponseList:
@@ -74,6 +87,7 @@ class main(object):
         email_message = self.encodeMessage(email_subject, tempfilename)
         self.sendMessage(email_message)
         logging.debug("Contents of extractFilesList %s" % self.extractedFilesList)
+        self.cleanUp()
 
     def createDirectoryStructure(self, rootdir):
         """
@@ -110,6 +124,21 @@ class main(object):
         return dir
 
     def autoExtract(self, directory):
+        """
+        Function for searching through the specified directory for rar 
+        archives by performing a simple check for each file in the dir.
+        If one is found, it attempts to extract.
+
+        Files that are extracted get appended to self.extractedFilesList
+        as a way to keep track of them. 
+
+        Once all files in the directory are either uploaded (or skipped if
+        they are archives), the extracted files are deleted by the cleanUP
+        function.
+
+        Args:
+            directory: string. Directory to check for archives
+        """
         for path, dirs, files in os.walk(directory):
             for EachFile in files:
                 filepath = os.path.join(path, EachFile)
@@ -119,28 +148,40 @@ class main(object):
                         logging.debug("UNRAR: Attemping extraction....")
                         with rarfile.RarFile(filepath) as rf:
                             startExtraction = time.time()
-                            rf.extractall(directory)
+                            rf.extractall(path=path)
                             timeToExtract = time.time() - startExtraction
-                            self.extractedFilesList.append(
+                            for EachExtractedFile in rf.namelist():
+                                self.extractedFilesList.append(
                                                     {
-                                                    'FileList': rf.namelist(),
+                                                    'FileList': EachExtractedFile,
+                                                    'Path': path,
                                                     'TimeToUnrar': timeToExtract
                                                      }
                                                     )
                             logging.debug("UNRAR: Extraction for %s took %s." % (filepath, timeToExtract))
                     except: 
-                        logging.debug("Moving onto next file.")
+                        logging.debug("UNRAR: Moving onto next file.")
 
     def cleanUp(self):
+        """
+        CleanUp script that removes each of the files that was previously extracted
+        from archives and deletes from the local hard drive.
+
+        Args:
+            None
+        """
         logging.info("CLEANUP: Cleanup started. Deleting extracted files.")
         DeleteFiles = self.extractedFilesList
         for EachFile in DeleteFiles:
-            logging.info("CLEANUP: Deleting %s." % EachFile)
-            os.remove(EachFile)
-            logging.info("CLEANUP: Deleted %s successfully." % EachFile)
+            FilePath = os.path.join(EachFile['Path'], EachFile['FileList'])
+            logging.info("CLEANUP: Deleting %s." % FilePath)
+            os.remove(FilePath)
+        if deleteTmpHTML is True:
+            logging.debug("CLEANUP: Deleting HTML File: %s" % tempfilename)
+            os.remove(tempfilename)
         logging.info("CLEANUP: Cleanup completed.")
 
-    def fetchTorrentFile(self, bt_name):
+    def fetchTorrentFile(self):
         """
         Fetches the Torrents file name to parse for sorting.
 
@@ -150,6 +191,7 @@ class main(object):
         Returns:
             filepath: /path/to/file to be parsed for trackerinfo
         """
+        bt_name = self.bt_name
         torrentFileDirectory = self.torrentFileDirectory
         for path, dirs, files in os.walk(torrentFileDirectory):
             for EachTorrent in files:
@@ -158,6 +200,12 @@ class main(object):
                     return filepath 
 
     def getIDs(self):
+        """
+        Fetches IDs from the Google API to be assigned as needed.
+
+        Args:
+            None
+        """
         service = self.serviceDrive
         IDs = service.files().generateIds().execute()
         return IDs['ids']
@@ -255,7 +303,7 @@ class main(object):
                 self.uploadPreserve(subfolder, Folder_ID=subfolder_id)
 
 
-    def uploadToGoogleDrive(self, FileEntry, FileTitle, Folder_ID=None):
+    def uploadToGoogleDrive(self, FilePath, FileTitle, Folder_ID=None):
         """
         Performs upload to Google Drive. 
 
@@ -274,16 +322,22 @@ class main(object):
         }
         if Folder_ID:
             body['parents'] = [{'id' : Folder_ID}]
-        media = MediaFileUpload(FileEntry, chunksize=1024*1024, resumable=True)
+        media = MediaFileUpload(FilePath, chunksize=chunksize, resumable=True)
         response = service.files().insert(body=body, media_body=media).execute()
         if self.nonDefaultPermissions == True:
             fileID = response['id']
             self.setPermissions(fileID)
+        response['alt_tiny'] = self.shortenUrl(response['alternateLink'])
         return response
 
     def setPermissions(self, file_id):
         """
-        Sets the permissions for the file
+        Sets the permissions for the file as long as settings.nonDefaultPermissions
+        is set to True. If set to True, the permissions listed there will be applied
+        after each file is uploaded to Google Drive.
+
+        Args:
+            file_id: string. Unique File ID assigned by google after file is uploaded
         """
         service = self.serviceDrive
         newPermissions = {
@@ -293,6 +347,28 @@ class main(object):
             }
         return service.permissions().insert(
             fileId=file_id, body=newPermissions).execute()
+
+    def shortenUrl(self, URL):
+        """
+        URL Shortener function that when combined with the uploading
+        script adds a new key:value to the JSON response with a much
+        more managable URL.
+
+        Args:
+            URL: string. URL parsed from JSON response
+        """
+        http = Authorize()
+        service = discovery.build('urlshortener', 'v1', http=http)
+        url = service.url()
+        body =  {
+            'longUrl': URL
+                }
+        response = url.insert(body=body).execute()
+        logging.debug("URLSHRINK: %s" % response)
+        short_url = response['id']
+        logging.debug("URLSHRINK: %s" % short_url)
+        return short_url
+
            
 
 
