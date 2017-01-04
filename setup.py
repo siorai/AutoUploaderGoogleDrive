@@ -9,8 +9,8 @@ setup(
     install_requires=[
         "google-api-python-client >= 1.2",
         "oauth2client >= 4.0.0",
-        "httplib2"
-        "rarfile,
+        "httplib2",
+        "rarfile",
     ],
     entry_points={
       'console_scripts': [
