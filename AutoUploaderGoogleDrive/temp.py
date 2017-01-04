@@ -9,8 +9,8 @@ import os
 import tempfile
 import logging
 
-from AutoUploaderGoogleDrive.settings import logfile
-
+from AutoUploaderGoogleDrive.settings import logfile, emailparameters, tempfilename
+import upload
 
 #Module for the creation and population of a temporary W3C Validated HTML file
 #containing an a table to be compiled using AutoUploaderGoogleDrive.upload.encode_message 
@@ -18,78 +18,74 @@ from AutoUploaderGoogleDrive.settings import logfile
 
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
 
-#tempfilename = '/tmp/transmission.%s.html' % os.getpid()
-
 def setup_temp_file(tempfilename):
-  """ 
-  Creates an html file with initial tags 
-  to be ultimately encoded in the encode_message
-  function. Sets up the initial table with 'Time
-  Uploaded', 'File size in bytes', 'File Name',
-  and 'Link to File'. Where link is direct link supplied
-  from Google Drive.
+    """ 
+    Creates an html file with initial tags 
+    to be ultimately encoded in the encode_message
+    function. Sets up the initial table with 'Time
+    Uploaded', 'File size in bytes', 'File Name',
+    and 'Link to File'. Where link is direct link supplied
+    from Google Drive.
 
-  Args:
+    Args:
    
-    tempfilename: path/to/temp/file/name
+        tempfilename: path/to/temp/file/name
     
-  Returns:
+    Returns:
     
-    Nothing
+        Nothing
   
-  """
-  print 'Building a tempfile:'
-  logging.info('Creating html file %s' % tempfilename)
-  htmlfile = open(tempfilename, 'w')
-
-  message = """<!DOCTYPE HTML SYSTEM>
+    """
+    logging.debug("TEMP: Creating html file %s" % tempfilename)
+    htmlfile = open(tempfilename, 'w')
+    logging.debug("TEMP: %s created." % tempfilename)
+    message = """<!DOCTYPE HTML SYSTEM>
 <html>
 <head><title></title></head>
 <body><p>
 <table style="width:100%">
-  <tr>
-    <th>Time Uploaded</th>
-    <th>File size in bytes</th>
-    <th>File Name</th>
-    <th>Link to File</th>
-  </tr>"""
+  <tr>"""
+    htmlfile.write(message)
+    htmlfile.close
+    htmlfile = open(tempfilename, 'a')
+    for EachHeader in emailparameters:
+        TableHeader = """
+    <th>%s</th>""" % (EachHeader)
+        htmlfile.write(TableHeader)
+    htmlfile.write("""
+  </tr>""")
+    htmlfile.close
+    logging.debug("TEMP: %s has been created." % tempfilename)
+    
 
-  htmlfile.write(message)
-  htmlfile.close()
-  logging.info('%s created.' % tempfilename)
 
-
-
-def addentry(tempfilename, time_uploaded, file_size_bytes, name_of_file, direct_gdrive_link):
-  """ 
-  Appends the temp html file by adding a row 
-  in the table for each entry in the list supplied from 
-  AutoUploaderGoogleDrive.emailtest.get_filepaths
-  
-  Args:
-    tempfilename: path/to/temp/file/name
-    time_uploaded: string returned from os.getenv('TR_TIME_LOCALTIME') 
-    file_size_bytes: int returned from os.path.getsize
-    name_of_file: string returned from list returned by
+def addentry(tempfilename, JData):
+    """ 
+    Appends the temp html file by adding a row 
+    in the table for each entry in the list supplied from 
     AutoUploaderGoogleDrive.emailtest.get_filepaths
-    direct_gdrive_link: direct link to file's location on Google Drive
   
+    Args:
+        tempfilename: path/to/temp/file/name
+        JData: JSON data to be parsed to pull information from
+    
+    Returns:
+        Nothing 
   
-  """  
-  logging.info('Opening %s to add entry %s' % (tempfilename, name_of_file)) 
-  append = open(tempfilename, 'a')
-  
-  table_entry = """  
-  <tr>
-    <td>%s</td>
-    <td>%s</td>
-    <td>%s</td>
-    <td>%s</td>
-  </tr>""" % (time_uploaded, file_size_bytes, name_of_file, direct_gdrive_link)             
-
-  append.write (table_entry)
-  append.close()
-  logging.info('Added %s entry to %s' % (name_of_file, tempfilename ))
+    """  
+    logging.debug("TABLE: Opening %s to append entry" % tempfilename)
+    append = open(tempfilename, 'a')
+    RowTag = """
+  <tr>"""
+    append.write(RowTag)
+    for EachEntry in emailparameters:          
+        Entry = """
+    <td>%s</td>""" % JData[EachEntry]
+        logging.debug("TABLE: Entry added: %s" % EachEntry)
+        append.write(Entry)
+    RowEnd = """
+  </tr>"""
+    append.close()
 
 def finish_html(tempfilename):
   """ 
@@ -110,7 +106,7 @@ def finish_html(tempfilename):
   
   append.write(finish_up)
   append.close()
-  logging.info('Wrapping up html in %s' % tempfilename )
+  logging.debug("TABLE: Wrapping up html in %s" % tempfilename)
 
 
 

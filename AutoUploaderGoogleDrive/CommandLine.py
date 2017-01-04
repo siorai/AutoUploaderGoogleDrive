@@ -12,9 +12,9 @@ from apiclient import discovery
 from apiclient.http import MediaFileUpload
 
 from AutoUploaderGoogleDrive.auth import Authorize
-from AutoUploaderGoogleDrive.Rules import *
 from AutoUploaderGoogleDrive.settings import *
 from AutoUploaderGoogleDrive.temp import *
+from AutoUploaderGoogleDrive.Rules import *
 
 import rarfile
 from rarfile import Error, BadRarFile, NeedFirstVolume
@@ -23,7 +23,8 @@ from email.mime.text import MIMEText
 
 __author__ = 'siorai@gmail.com (Paul Waldorf)'
 
-class main(object):
+class main(object):    
+    script, localFolder = argv
     logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
     def __init__(self, localFolder=None):
         """
@@ -57,6 +58,8 @@ class main(object):
             self.fullFilePaths = os.path.join(self.bt_dir, self.bt_name)
             logging.debug("Joined bt_dir and bt_name to get %s" % self.fullFilePaths)
             self.autoExtract(self.fullFilePaths)
+            updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+            self.destgoogledrivedir = updategoogledrivedir[1]
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
             logging.debug("Creating dictionary of files: %s" % self.FilesDict)
             logging.debug('Information pulled successfully')
@@ -67,11 +70,14 @@ class main(object):
             self.bt_name = self.folderName[-2]
             logging.debug("Using %s" % self.bt_name)
             self.autoExtract(self.fullFilePaths)
+            updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+            logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
+            self.destgoogledrivedir = updategoogledrivedir[1]
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
         
         logging.debug("Using %s as FilesDict" % self.FilesDict)
         self.autoExtract(self.fullFilePaths)
-        self.uploadPreserve(self.FilesDict, Folder_ID=googledrivedir)
+        self.uploadPreserve(self.FilesDict, Folder_ID=self.destgoogledrivedir)
         tempfilename = '/var/tmp/transmissiontemp/transmission.%s.%s.html' % (self.bt_name, os.getpid())
         setup_temp_file(tempfilename)
         for EachEntry in self.JSONResponseList:
@@ -362,6 +368,7 @@ class main(object):
         short_url = response['id']
         logging.debug("URLSHRINK: %s" % short_url)
         return short_url
+
            
 
 

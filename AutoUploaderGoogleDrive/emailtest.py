@@ -10,7 +10,7 @@ from email.mime.text import MIMEText # For email encoding
 import logging
 
 
-from AutoUploaderGoogleDrive.settings import keyfile, client_email, delegated_email, logfile #import settings needed to interact with googleapi
+from AutoUploaderGoogleDrive.settings import servicekeyfile, client_email, delegated_email, logfile, scopes, flow_to_use #import settings needed to interact with googleapi
 import AutoUploaderGoogleDrive.upload
 
 
@@ -18,10 +18,9 @@ import AutoUploaderGoogleDrive.upload
 
 from oauth2client.service_account import ServiceAccountCredentials #ServiceLevelAccount 
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s') #logging config
-scopes = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.compose']#googleapi scopes
-credentials = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scopes=scopes) #ServiceAccount object
+credentials = ServiceAccountCredentials.from_json_keyfile_name(servicekeyfile, scopes=scopes) #ServiceAccount object
 delegated_credentials = credentials.create_delegated(delegated_email) #delegates which users files to access
-
+httplib2.debuglevel = 4
 
 
 def main():
