@@ -9,7 +9,7 @@ import os
 import tempfile
 import logging
 
-from AutoUploaderGoogleDrive.settings import logfile, emailparameters
+from AutoUploaderGoogleDrive.settings import logfile, emailparameters, tempfilename
 import upload
 
 #Module for the creation and population of a temporary W3C Validated HTML file
@@ -17,8 +17,6 @@ import upload
 
 
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
-
-tempfilename = '/var/tmp/transmissiontemp/transmission.%s.html' % os.getpid()
 
 def setup_temp_file(tempfilename):
     """ 
@@ -38,9 +36,9 @@ def setup_temp_file(tempfilename):
         Nothing
   
     """
-    logging.debug('TEMP: Creating html file %s' % tempfilename)
+    logging.debug("TEMP: Creating html file %s" % tempfilename)
     htmlfile = open(tempfilename, 'w')
-    logging.debug('TEMP: %s created.' % tempfilename)
+    logging.debug("TEMP: %s created." % tempfilename)
     message = """<!DOCTYPE HTML SYSTEM>
 <html>
 <head><title></title></head>
@@ -57,7 +55,7 @@ def setup_temp_file(tempfilename):
     htmlfile.write("""
   </tr>""")
     htmlfile.close
-    logging.debug('%s created.' % tempfilename)
+    logging.debug("TEMP: %s has been created." % tempfilename)
     
 
 
@@ -71,10 +69,11 @@ def addentry(tempfilename, JData):
         tempfilename: path/to/temp/file/name
         JData: JSON data to be parsed to pull information from
     
-  
+    Returns:
+        Nothing 
   
     """  
-    #logging.debug('TABLE: Opening %s to append entry') % tempfilename
+    logging.debug("TABLE: Opening %s to append entry" % tempfilename)
     append = open(tempfilename, 'a')
     RowTag = """
   <tr>"""
@@ -82,11 +81,11 @@ def addentry(tempfilename, JData):
     for EachEntry in emailparameters:          
         Entry = """
     <td>%s</td>""" % JData[EachEntry]
+        logging.debug("TABLE: Entry added: %s" % EachEntry)
         append.write(Entry)
     RowEnd = """
   </tr>"""
     append.close()
-    #logging.debug('TABLE: Added %s entry to %s') % (name_of_file, name_of_file)
 
 def finish_html(tempfilename):
   """ 
@@ -107,7 +106,7 @@ def finish_html(tempfilename):
   
   append.write(finish_up)
   append.close()
-  #logging.debug('Wrapping up html in %s' % tempfilename )
+  logging.debug("TABLE: Wrapping up html in %s" % tempfilename)
 
 
 
