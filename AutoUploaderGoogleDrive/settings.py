@@ -158,10 +158,14 @@ SortTorrents = False
 
 categoriesDictSettings = {
     'Music': { 
-        'Folder_ID': ['somefolder'],
+        'Folder_ID': ['somefolder'], # folder_ID for Music here
         'Matches': {
-            'Match_Tracker': ['sometracker']
-            'Match_Content_Extention' : [ 
+            'Match_Tracker': [ # list of Music trackers
+                    'http://tracker.example1.com/announce',
+                    'http://tracker.example2.com/announce',
+                    'http://tracker.example3.com/announce',
+            ],
+            'Match_Content_Extention' : [ # list of file extentions
                     '*.aac', 
                     '*.flac', 
                     '*.mp3'
@@ -169,26 +173,38 @@ categoriesDictSettings = {
         }
     },
     'TV':   {
-        'Folder_ID': ['somefolder'],
+        'Folder_ID': ['somefolder'], # folder_ID for TV here
         'Matches': {
-            'Match_Tracker': ['sometracker'],
-            'Match_Expression': [
-                '*.S??E??.*', 
-                '*.s??e??.*'
+            'Match_Tracker': [ # list of TV trackers
+                    'http://tracker.example1.com/announce',
+                    'http://tracker.example2.com/announce',
+                    'http://tracker.example3.com/announce',
+            ],
+            'Match_Expression': [ # list of TV expressions
+                    '*.S??E??.*', 
+                    '*.s??e??.*'
             ]
 
         }
     },
     'Movies':{
-        'Folder_ID': ['somefolder'],
+        'Folder_ID': ['somefolder'], # folder_ID for Movies here
         'Matches': {
-            'Match_Tracker': ['sometracker']
+            'Match_Tracker': [ # list of Movies trackers
+                    'http://tracker.example1.com/announce',
+                    'http://tracker.example2.com/announce',
+                    'http://tracker.example3.com/announce',
+            ],
         }
     },
     'XXX': {  
-        'Folder_ID': ['somefolder'],
+        'Folder_ID': ['somefolder'], # folder_ID for XXX here
         'Matches': {
-            'Match_Tracker' : ['sometracker']
+            'Match_Tracker': [ # list of XXX trackers
+                    'http://tracker.example1.com/announce',
+                    'http://tracker.example2.com/announce',
+                    'http://tracker.example3.com/announce',
+            ],
         }
     }
 }
