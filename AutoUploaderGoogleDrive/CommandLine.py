@@ -58,7 +58,12 @@ class main(object):
             self.fullFilePaths = os.path.join(self.bt_dir, self.bt_name)
             logging.debug("Joined bt_dir and bt_name to get %s" % self.fullFilePaths)
             self.autoExtract(self.fullFilePaths)
-            updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+            if SortTorrents == True:
+                updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+                logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
+            else: 
+                updategoogledrivedir = ["0", googledrivedir]
+                logging.debug("***SORTSKIPPED*** %s" % updategoogledrivedir)
             self.destgoogledrivedir = updategoogledrivedir[1]
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
             logging.debug("Creating dictionary of files: %s" % self.FilesDict)
@@ -70,8 +75,12 @@ class main(object):
             self.bt_name = self.folderName[-2]
             logging.debug("Using %s" % self.bt_name)
             self.autoExtract(self.fullFilePaths)
-            updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
-            logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
+            if SortTorrents == True:
+                updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+                logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
+            else:
+                updategoogledrivedir = ["0", googledrivedir]
+                logging.debug("***SORTSKIPPED*** %s" % updategoogledrivedir)
             self.destgoogledrivedir = updategoogledrivedir[1]
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
         
