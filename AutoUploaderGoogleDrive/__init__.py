@@ -45,21 +45,19 @@ class main(object):
         self.extractedFilesList = []
         self.nonDefaultPermissions = nonDefaultPermissions
         try:
-            logging.debug('Attempting to pull information from daemon env')
+            logging.debug("INIT: ENV: Attempting to load ENV variables")
             self.bt_name = os.getenv('TR_TORRENT_NAME')
-            logging.debug("Pulled bt_name successfully: %s" % self.bt_name)
-            self.bt_time = os.getenv('TR_TIME_LOCALTIME')
-            logging.debug("Pulled bt_time successfully: %s" % self.bt_time)
-            self.bt_app = os.getenv('TR_APP_VERSION')
-            logging.debug("Pulled app_version successfully: %s" % self.bt_app)
             self.bt_dir = os.getenv('TR_TORRENT_DIR')
-            logging.debug("Pulled Torrent Dir successfully: %s " % self.bt_dir)
-            self.bt_hash = os.getenv('TR_TORRENT_HASH')
-            logging.debug("Pulled hash successfully: %s " % self.bt_hash)
-            self.bt_id = os.getenv('TR_TORRENT_ID')
-            logging.debug("Pulled torrent_id successfully: %s" % self.bt_id)
+            if self.bt_name or self.bt_dir is 'None':
+                logging.debug("INIT: ENV: Failed find required env.")
+                logging.debug("INIT: ENV: Attempting localFolder check")
+            else:
+                logging.debug("INIT: ENV: Recieved %s as Torrent Name." % self.bt_name)
+                logging.debug("INIT: ENV: Recieved %s as Torrent Directory." % self.bt_dir)
+            
+            logging.debug("INIT: Extrapolating file path from %s, %s" % (self.bt_name, self.bt_dir))
             self.fullFilePaths = os.path.join(self.bt_dir, self.bt_name)
-            logging.debug("Joined bt_dir and bt_name to get %s" % self.fullFilePaths)
+            logging.debug("INIT: Filepath Directory is %ss" % self.fullFilePaths)
             self.autoExtract(self.fullFilePaths)
             if SortTorrents == True:
                 updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
@@ -72,6 +70,14 @@ class main(object):
             logging.debug("Creating dictionary of files: %s" % self.FilesDict)
             logging.debug('Information pulled successfully')
         except(AttributeError):
+            logging.debug("MAIN: Single file check")
+            
+            try:
+                if os.path.isfile(self.localFolder) == True:
+                    logging.debug("MAIN: Single file: Found for %s" % self.localFolder)
+                    self.singleFileUpload(self.localFolder) 
+            except(AttributeError):
+                print("localFolder not found")
             self.fullFilePaths = self.localFolder
             self.folderName = self.fullFilePaths.rsplit(os.sep)
             logging.debug("Using %s" % self.folderName)
@@ -94,12 +100,40 @@ class main(object):
         setup_temp_file(tempfilename)
         for EachEntry in self.JSONResponseList:
             addentry(tempfilename, EachEntry)
-        finish_html(tempfilename)
+        finish_html(tempfilename, self.destgoogledrivedir)
         email_subject = ("%s has finished downloading.") % self.bt_name
         email_message = self.encodeMessage(email_subject, tempfilename)
         self.sendMessage(email_message)
         logging.debug("Contents of extractFilesList %s" % self.extractedFilesList)
         self.cleanUp()
+
+    def singleFileUpload(self, localFile):
+        logging.debug("MAIN: SINGLE: Found: %s" % localFile)
+        FilePath = os.path.abspath(localFile)
+        FileTitle = os.path.basename(localFile)
+        if useSpecialforSingles == True:
+            logging.debug("MAIN: SINGLE: Special folder flag returned True.")
+            logging.debug("MAIN: SINGLE: Setting remote directory to pastingbin")
+            remoteDir = pastingbin
+            email_subject = ("Single file: %s has been uploaded to your pastebin" % FileTitle)
+        else:
+            logging.debug("MAIN: SINGLE: Special folder flag returned False.")
+            logging.debug("MAIN: SINGLE: Setting remote directory to default.")
+            remoteDir = googledrivedir
+            email_subject = ("Single file: %s has been uploaded to your default directory")
+        logging.debug("MAIN: SINGLE: Uploading to %s" % remoteDir)
+        response = self.uploadToGoogleDrive(FilePath, FileTitle, Folder_ID=remoteDir)
+        self.JSONResponseList.append(response)
+        setup_temp_file(tempfilename)
+        for EachResponse in self.JSONResponseList:
+            addentry(tempfilename, EachResponse)
+        finish_html(tempfilename, remoteDir)
+        email_message = self.encodeMessage(email_subject, tempfilename)
+        self.sendMessage(email_message)
+        print("Shortened URL: %s" % response['alt_tiny'])
+        quit()
+
+
 
     def createDirectoryStructure(self, rootdir):
         """
@@ -380,9 +414,6 @@ class main(object):
         short_url = response['id']
         logging.debug("URLSHRINK: %s" % short_url)
         return short_url
-           
-
-
 
 
 if __name__ == '__main__':
