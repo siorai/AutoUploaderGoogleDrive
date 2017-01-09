@@ -9,8 +9,10 @@ import os
 import tempfile
 import logging
 
-from AutoUploaderGoogleDrive.settings import logfile, emailparameters, tempfilename
-import upload
+from apiclient import discovery
+
+from AutoUploaderGoogleDrive.auth import Authorize
+from AutoUploaderGoogleDrive.settings import logfile, emailparameters, tempfilename 
 
 #Module for the creation and population of a temporary W3C Validated HTML file
 #containing an a table to be compiled using AutoUploaderGoogleDrive.upload.encode_message 
@@ -87,26 +89,52 @@ def addentry(tempfilename, JData):
   </tr>"""
     append.close()
 
-def finish_html(tempfilename):
-  """ 
-  Closes up the html temp file and closes the tags
+def finish_html(tempfilename, googledrivedir):
+    """
+    Closes up the html temp file and closes the tags
   
-  Args: 
-    tempfilename: path/to/temp/file/name
-    
-  Returns:
-    Nothing
-  """	
+    Args: 
+        tempfilename: string. /path/to/temp/file/name        
+        googledrivedir: string.  Selected category containing uploaded Files
+                            and/or subdirectories.
 
-  append = open(tempfilename, 'a')
-  finish_up = """
+    Returns:
+        Nothing
+    """	
+    Resource_ID = googledrivedir
+    logging.debug("TEMP: EMAIL CLOSE: Fetching into for %s" % Resource_ID)
+    FolderInfo = getRemoteFolderInfo(Resource_ID)
+    append = open(tempfilename, 'a')
+    finish_up = """
 </table>
+<p>Direct link to Google Drive folder containing the subdirectory(Folder for entire category):&nbsp;
+  <a href="%s">%s</a>
+</p>
 </body>
-</html>"""
+</html>""" % (FolderInfo['alternateLink'], FolderInfo['title'])
   
-  append.write(finish_up)
-  append.close()
-  logging.debug("TABLE: Wrapping up html in %s" % tempfilename)
+    append.write(finish_up)
+    append.close()
+    logging.debug("TEMP: EMAIL CLOSE: Wrapping up html in %s" % tempfilename)
+
+def getRemoteFolderInfo(Resource_ID):
+    """
+    Method for retrieving metadata about a file or folder on Google
+    Drive. 
+
+    Args:
+        Resource_ID: string. Unique ID representing the resource
+
+    Returns:
+        FolderInfo: JSON Fromtted files resource.
+    """
+    http = Authorize()
+    service = discovery.build('drive', 'v2', http=http)
+    logging.debug("DRIVEQUERY: METADATA: Requesting info for %s" % Resource_ID)
+    print(Resource_ID)
+    FolderInfo = service.files().get(fileId=Resource_ID[0]).execute()
+    logging.debug("DRIVEQUERY: METADATA: Recieved info for %s" % FolderInfo['title'])
+    return FolderInfo
 
 
 
