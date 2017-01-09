@@ -208,18 +208,21 @@ Getting setup:
 
 open AutoUploaderGoogleDrive/settings.py in your favorite text editor and configure it. 
 
-After which commandline usage should be 
+After which commandline usage should be:
+
+Directories:
 
 ::
 
-    AutoUploaderGoogleDrive /path/to/directory
+    AutoUploaderGoogleDrive /path/to/directory/ 
 
 ::
 
-For single files use(from install dir):
+Files:
 
 ::
+
+    AutoUploaderGoogleDrive /path/to/file.file
     
-    python Upload2.py /path/to/file
-
 ::
+
