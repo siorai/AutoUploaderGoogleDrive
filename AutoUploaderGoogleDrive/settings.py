@@ -2,22 +2,15 @@ import logging
 import httplib2
 import os
 """
-Settings script containing all account related variables
-and customization options as they are become created
-through development.
+Application and User specific settings most of which are required
+for full script functionality. 
 
-Variables for scopes, logfile are required for any one 
-of the three oauth2 flows to function correctly.
+Each setting is accompanied by detailed comments outlining how to 
+acquire the value needed along with the format the script requires.
 
-flow_to_use variable must be set to either 
-"ServiceAccountFlow"
-"Oauth2JSONFlow"
-"Oauth2WebFlow"
-
-For the purposes of early testing the functionality of
-all three of these auth flow types, AutoUploaderGoogleDrive.emailtest
-will import all types for right now but will use the one 
-indicated by 'flow_to_use'
+This document may be replaced in the near future with an interactive
+script and validator in an effort to greatly reduce the potential errors
+due to improper or invalid settings.
 """
 
 __author__ = 'siorai@gmail.com (Paul Waldorf)'
@@ -26,6 +19,11 @@ __author__ = 'siorai@gmail.com (Paul Waldorf)'
 ######################################################
 #[General Information and initial setup requirements]#
 ######################################################
+# 
+# Please note, that as 1/7/2017, the proceeding detailed description
+# is accurate for creating the a Project and gaining OAuth2 credentials
+# from the developers console via Google. If this process changes, I'll 
+# do my best to make sure updated information is available in this package.
 #
 # Setting up this script requires a bit of work to setup initially fair warning
 # First, you'll need to create your own project at Google at
@@ -61,7 +59,7 @@ __author__ = 'siorai@gmail.com (Paul Waldorf)'
 #
 # Select Create Credentials then OAuth2 Cliend ID. When asked for
 # the Application type, select 'other', give it a name, and hit create. 
-# It'll show your client ID and client secret on screen, don't worry that
+# It'll show your client ID and client secret on screen, don't worry
 # and hit OK. From there you'll see a table with an entry. On the far right
 # of that you'll see a download arrow, this is the authentication for 
 # your application that identifies the script as being associated with this
@@ -270,6 +268,16 @@ httplib2.debuglevel = 4
 ################################
 #[Google Drive Upload Settings]#
 ################################
+
+# This setting allows for commandline usage directed at single files to be
+# uploaded to Google Drive based Pastebin-like folder for rapid transfer
+
+useSpecialforSingles = True
+
+# Setting for pastingbin folder ID 
+
+pastingbin = ['60B4jmMf2bD9-bm9XSkw2Z2w0d2M']
+
 
 # When set to True, modifies the permisisons of any file/folder created by this script to 
 # be viewable by anyone. Change to False to leave it as default.
