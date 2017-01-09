@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='AutoUploaderGoogleDrive',
-    version='0.0.3dev',
+    version='0.0.4dev',
     packages=find_packages(),
     long_description=open('README.md').read(),
     install_requires=[
@@ -14,8 +14,7 @@ setup(
     ],
     entry_points={
       'console_scripts': [
-          'AutoUploaderGoogleDrive = AutoUploaderGoogleDrive:main',
-          'Upload2GDrive = AutoUploaderGoogleDrive.CommandLine:main'
+          'AutoUploaderGoogleDrive = AutoUploaderGoogleDrive:main'
       ]
     }
 )
