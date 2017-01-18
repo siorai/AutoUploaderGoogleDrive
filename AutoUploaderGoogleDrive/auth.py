@@ -4,14 +4,24 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient import discovery
 import httplib2, logging, os
-import settings
+#import settings
 import pickle
 import json
 
 from oauth2client import client
 
-httplib2.debuglevel = settings.httplib2.debuglevel
-settings.loggingSetup
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+console.setFormatter(formatter)
+
+
+logging.getLogger('').addHandler(console)
+
+
+#from AutoUploaderGoogleDrive.settingsjson import settingsLoader
+from AutoUploaderGoogleDrive.settingsValidator import settingsLoader
 
 """
 Class for creation of an authorized credential object
@@ -31,15 +41,17 @@ def makeJSON():
     Once it's authorized, the credentials object is then pickled into
     a file for later use. 
     """
+    settings = settingsLoader()
+    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
     logging.debug("AUTH: JSON: flow_from_clientsecrets initialized")
     logging.debug("AUTH: JSON: Parameters used:")
-    logging.debug("AUTH: JSON: oauth2keyfile: %s" % settings.oauth2keyfile)
-    logging.debug("AUTH: JSON: Scopes=%s" % settings.scopes)
-    logging.debug("AUTH: JSON: redirect_uri=%s" % settings.redirect_uri)
+    logging.debug("AUTH: JSON: oauth2keyfile: %s" % settings['oauth2KeyFile'])
+    logging.debug("AUTH: JSON: Scopes=%s" % settings['scopes'])
+    logging.debug("AUTH: JSON: redirect_uri=%s" % settings['redirectURI'])
     flow = client.flow_from_clientsecrets(
-        settings.oauth2keyfile,
-        scope=settings.scopes,
-        redirect_uri=settings.redirect_uri)
+        settings['oauth2KeyFile'],
+        scope=settings['scopes'],
+        redirect_uri=settings['redirectURI'])
     flow.params['access_type'] = 'offline'
     auth_uri = flow.step1_get_authorize_url()
     print(auth_uri)
@@ -47,9 +59,9 @@ def makeJSON():
     auth_code = raw_input('Enter the authcode:')
     credentials = flow.step2_exchange(auth_code)
     http_auth = credentials.authorize(httplib2.Http())
-    with open(settings.pickledcredsFile, 'wb') as CF:
+    with open(settings['pickledCredsFile'], 'wb') as CF:
         pickle.dump(credentials, CF)
-    logging.debug("AUTH: JSON: Created: %s" % settings.pickledcredsFile)
+    logging.debug("AUTH: JSON: Created: %s" % settings['pickledCredsFile'])
 
 def flowJSON():
     """
@@ -58,11 +70,12 @@ def flowJSON():
     oauth2client.client
 
     """
-    with open(settings.pickledcredsFile, 'rb') as CF:
-        credentials = pickle.load(CF)
+    settings = settingsLoader()
+    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
+    with open(settings['pickledCredsFile'], 'rb') as credentialsFile:
+        credentials = pickle.load(credentialsFile)
     http_auth = credentials.authorize(httplib2.Http())
     logging.debug("AUTH: FLOW: Loaded Credentials from file")
-    logging.debug("AUTH: FLOW: %s" % credentials)
     return http_auth
 
 def Authorize():
@@ -77,11 +90,13 @@ def Authorize():
     with makeJSON(), saves it, and then attempts to
     open it by re-executing flowJSON.    
     """
+    settings = settingsLoader()
+    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
     logging.debug("AUTH: Authoriziation initialized")
-    flow = settings.flow_to_use
+    flow = settings['flowToUse']
     if(flow == "ServiceAccountFlow"):
         logging.debug("AUTH: FLOW: Service Account Selected")
-        http = Service_Account_Credential()
+        http = serviceAccountCredential()
         logging.debug("AUTH: SAC_FLOW: Service Account loaded")
         return http
     if(flow == "Oauth2JSONFlow"):
@@ -100,23 +115,24 @@ def Authorize():
     else:
         logging.debug("AUTH: Nothing found!")
    
-def Service_Account_Credential():
+def serviceAccountCredential():
     """
     Utilizes the Service Account Credential flow to instantiate an authorized credentials
     object for calling the Google API
     """
-    logging.debug('DEBUG: SAC_FLOW: Attemping to load settings file from %s' % settings.servicekeyfile)
-    keyfile = settings.servicekeyfile
-    logging.debug('DEBUG: SAC_FLOW: Finished loading Service Account Keyfile: using %s' % keyfile )
-    logging.debug('DEBUG: SAC_FLOW: Loading scopes from settings file')
-    scopes = settings.scopes
-    logging.debug('DEBUG: SAC_FLOW: Finished loading scopes from settings file')
-    logging.debug('DEBUG: SAC_FLOW: Initializing credential from oauth2client.service_account')
+    settings = settingsLoader()
+    scopes = settings['scopes']
+    settings = settings['serviceAccountCredentials']
+    keyfile = settings['serviceKeyFile']
+    logging.debug('AUTH: SAC_FLOW: Finished loading Service Account Keyfile: using %s' % keyfile )
+    logging.debug('AUTH: SAC_FLOW: Loading scopes from settings file')
+    logging.debug('AUTH: SAC_FLOW: Finished loading scopes from settings file')
+    logging.debug('AUTH: SAC_FLOW: Initializing credential from oauth2client.service_account')
     credentials = ServiceAccountCredentials.from_json_keyfile_name(keyfile, 
                         scopes=scopes)
-    logging.debug('DEBUG: SAC_FLOW: Delegating credentials from settings')
-    delegated_credentials = credentials.create_delegated(settings.delegated_email)
-    logging.debug('DEBUG: SAC_FLOW:Initializing authorized, delegated credentials object')
+    logging.debug('AUTH: SAC_FLOW: Delegating credentials from settings')
+    delegated_credentials = credentials.create_delegated(settings['delegatedEmail'])
+    logging.debug('AUTH: SAC_FLOW:Initializing authorized, delegated credentials object')
     http = delegated_credentials.authorize(httplib2.Http())
     
     return http

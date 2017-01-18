@@ -13,16 +13,15 @@ from apiclient import discovery
 from apiclient.http import MediaFileUpload
 
 from AutoUploaderGoogleDrive.auth import Authorize
-from AutoUploaderGoogleDrive.rules import *
-#from AutoUploaderGoogleDrive.settings import *
+from AutoUploaderGoogleDrive.Rules import *
+from AutoUploaderGoogleDrive.settings import *
 from AutoUploaderGoogleDrive.temp import *
-from AutoUploaderGoogleDrive.settingsValidator import settingsLoader
+from AutoUploaderGoogleDrive.settingsjson import settingsLoader
+
 import rarfile
 from rarfile import Error, BadRarFile, NeedFirstVolume
 
 from email.mime.text import MIMEText
-
-
 
 __author__ = 'siorai@gmail.com (Paul Waldorf)'
 
@@ -31,24 +30,26 @@ class main(object):
         script, localFolder = argv
     except:
         print("arg not found")
-    #logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
-    #with open("settingsNew.json", 'rb') as SJ:
-    #    settings = json.load(SJ)
     def __init__(self, localFolder=None):
         """
         ........ does a lot......
 
         ........ to be added soon.....
         """
-        self.settings = settingsLoader()
-        logging.basicConfig(filename=self.settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
+        with open('settingsNew.json', 'rb') as settingsJSON:
+            settings = json.load(settingsJSON)
+        self.settings = settings
+        if settings['enableLogging'] == True:
+            logging.basicConfig(filename=self.settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
         http = Authorize()
         if localFolder:
             self.localFolder = localFolder
         self.serviceGmail = discovery.build('gmail', 'v1', http=http)
         self.serviceDrive = discovery.build('drive', 'v2', http=http)
         self.JSONResponseList = []
+        self.Public = True
         self.extractedFilesList = []
+        self.nonDefaultPermissions = nonDefaultPermissions
         try:
             logging.debug("INIT: ENV: Attempting to load ENV variables")
             self.bt_name = os.getenv('TR_TORRENT_NAME')
@@ -64,7 +65,7 @@ class main(object):
             self.fullFilePaths = os.path.join(self.bt_dir, self.bt_name)
             logging.debug("INIT: Filepath Directory is %ss" % self.fullFilePaths)
             self.autoExtract(self.fullFilePaths)
-            if self.settings['enableSorting'] == True:
+            if SortTorrents == True:
                 updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
                 logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
             else: 
@@ -89,7 +90,7 @@ class main(object):
             self.bt_name = self.folderName[-2]
             logging.debug("Using %s" % self.bt_name)
             self.autoExtract(self.fullFilePaths)
-            if self.settings['enableSorting'] == True:
+            if self.settings['sortTorrents'] == True:
                 updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
                 logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
             else:
@@ -101,41 +102,50 @@ class main(object):
         logging.debug("Using %s as FilesDict" % self.FilesDict)
         self.uploadPreserve(self.FilesDict, Folder_ID=self.destgoogledrivedir)
         tempfilename = '/var/tmp/transmissiontemp/transmission.%s.%s.html' % (self.bt_name, os.getpid())
+        self.sendEmail(tempfilename)
+        logging.debug("Contents of extractFilesList %s" % self.extractedFilesList)
+        self.cleanUp()
+
+    def sendEmail(self, tempfilename):
+        """
+        Compiles email and sends it upon torrent completion
+        """
         setup_temp_file(tempfilename)
         for EachEntry in self.JSONResponseList:
             addentry(tempfilename, EachEntry)
         finish_html(tempfilename, self.destgoogledrivedir)
-        email_subject = ("%s has finished downloading.") % self.bt_name
+        email_subject = ("%s has finished downloads.") % self.bt_name
         email_message = self.encodeMessage(email_subject, tempfilename)
         self.sendMessage(email_message)
-        logging.debug("Contents of extractFilesList %s" % self.extractedFilesList)
-        self.cleanUp()
+            
+
 
     def singleFileUpload(self, localFile):
         logging.debug("MAIN: SINGLE: Found: %s" % localFile)
         FilePath = os.path.abspath(localFile)
         FileTitle = os.path.basename(localFile)
-        if self.settings['enableDrivePasteBin'] == True:
+        if self.settings['useSpecialforSingles'] == True:
             logging.debug("MAIN: SINGLE: Special folder flag returned True.")
             logging.debug("MAIN: SINGLE: Setting remote directory to pastingbin")
-            remoteDir = self.settings['pastingBinDir']
+            remoteDir = pastingbin
             email_subject = ("Single file: %s has been uploaded to your pastebin" % FileTitle)
         else:
             logging.debug("MAIN: SINGLE: Special folder flag returned False.")
             logging.debug("MAIN: SINGLE: Setting remote directory to default.")
-            remoteDir = self.settings['googleDriveDir']
+            remoteDir = googledrivedir
             email_subject = ("Single file: %s has been uploaded to your default directory")
         logging.debug("MAIN: SINGLE: Uploading to %s" % remoteDir)
+        print(settings)
         response = self.uploadToGoogleDrive(FilePath, FileTitle, Folder_ID=remoteDir)
+        response['alt_tiny'] = self.shortenUrl(response['alternateLink'])
         self.JSONResponseList.append(response)
-        tempfilename = self.tempfilename
         setup_temp_file(tempfilename)
         for EachResponse in self.JSONResponseList:
             addentry(tempfilename, EachResponse)
         finish_html(tempfilename, remoteDir)
         email_message = self.encodeMessage(email_subject, tempfilename)
         self.sendMessage(email_message)
-        print("Shortened URL: %s" % response['alt_tiny'])
+        print("URL: %s" % response['alt_tiny'])
         quit()
 
 
@@ -221,16 +231,16 @@ class main(object):
         Args:
             None
         """
-        logging.debug("CLEANUP: Cleanup started. Deleting extracted files.")
+        logging.info("CLEANUP: Cleanup started. Deleting extracted files.")
         DeleteFiles = self.extractedFilesList
         for EachFile in DeleteFiles:
             FilePath = os.path.join(EachFile['Path'], EachFile['FileList'])
-            logging.debug("CLEANUP: Deleting %s." % FilePath)
+            logging.info("CLEANUP: Deleting %s." % FilePath)
             os.remove(FilePath)
-        if self.settings['deleteTempHTML'] is True:
+        if deleteTmpHTML is True:
             logging.debug("CLEANUP: Deleting HTML File: %s" % tempfilename)
             os.remove(tempfilename)
-        logging.debug("CLEANUP: Cleanup completed.")
+        logging.info("CLEANUP: Cleanup completed.")
 
     def fetchTorrentFile(self):
         """
@@ -243,7 +253,7 @@ class main(object):
             filepath: /path/to/file to be parsed for trackerinfo
         """
         bt_name = self.bt_name
-        torrentFileDirectory = self.torrentFileDirectory
+        torrentFileDirectory = self.settings['torrentFileDirectory']
         for path, dirs, files in os.walk(torrentFileDirectory):
             for EachTorrent in files:
                 if bt_name in EachTorrent:
@@ -281,7 +291,7 @@ class main(object):
         if parents:
             body['parents'] = [{'id' : parents}]
         response = service.files().insert(body=body).execute()
-        if self.settings['enableNonDefaultPermissions'] == True:
+        if self.nonDefaultPermissions == True:
             fileID = response['id']
             self.setPermissions(fileID)
         return response['id']
@@ -301,8 +311,8 @@ class main(object):
         readhtml = open(tempfilename, 'r')
         html = readhtml.read()
         message = MIMEText(html, 'html')
-        message['to'] = self.settings['emailTo']
-        message['from'] = self.settings['emailSender']
+        message['to'] = emailTo
+        message['from'] = emailSender
         message['subject'] = subject
         return {'raw': base64.urlsafe_b64encode(message.as_string())}
 
@@ -373,35 +383,23 @@ class main(object):
         }
         if Folder_ID:
             body['parents'] = [{'id' : Folder_ID}]
-        startUpload = time.time()
+        chunksize = self.settings['googleDriveUpload']
         media = MediaFileUpload(FilePath, chunksize=self.settings['chunkSize'], resumable=True)
-        response = service.files().insert(body=body, media_body=media)
-        fileSize = os.path.getsize(FilePath)
-        reply = None
-        chunkNumber = 0
-        while reply is None:
-            chunkStart = time.time()
-            status, reply = response.next_chunk()
-            if status:
-                chunkNumber += 1
-                logging.debug("UPLOAD: %s is %f%% complete." % (FileTitle, status.progress()*100))
-                chunkEnd = time.time()
-                #logging.debug("UPLOAD: Chunk %i of %i." % (chunkNumber, chunkEnd - chunkStart))
-        print reply
-        if self.settings['enableNonDefaultPermissions'] == True:
-            fileID = reply['id']
+        response = service.files().insert(body=body, media_body=media).execute()
+        #reply = None
+        #while reply is None:
+        #    status, reply = response.next_chunk()
+        #    if status:
+        #        print("Uploaded %d%%." % int(status.progress() * 100))
+        if self.settings['nonDefaultPermissions'] == True:
+            fileID = response['id']
             self.setPermissions(fileID)
-        finishUpload = time.time()
-        uploadTime = finishUpload - startUpload
-        reply['timeToUpload'] = uploadTime
-        if self.settings['shortenURL'] == True:
-            reply['alt_tiny'] = self.shortenUrl(reply['alternateLink'])
-        logging.debug("UPLOAD: %s uploaded. Took %d" % (FileTitle, uploadTime))
-        return reply
+        #response['alt_tiny'] = self.shortenUrl(response['alternateLink'])
+        return response
 
     def setPermissions(self, file_id):
         """
-        Sets the permissions for the file as long as settings.enableNonDefaultPermissions
+        Sets the permissions for the file as long as settings.nonDefaultPermissions
         is set to True. If set to True, the permissions listed there will be applied
         after each file is uploaded to Google Drive.
 
@@ -413,7 +411,6 @@ class main(object):
             'value': self.settings['permissionValue'],
             'type': self.settings['permissionType'],
             'role': self.settings['permissionRole'],
-            'withLink': self.settings['withLink'],
             }
         return service.permissions().insert(
             fileId=file_id, body=newPermissions).execute()

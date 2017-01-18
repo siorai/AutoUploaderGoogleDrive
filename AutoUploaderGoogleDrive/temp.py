@@ -12,12 +12,14 @@ import logging
 from apiclient import discovery
 
 from AutoUploaderGoogleDrive.auth import Authorize
-from AutoUploaderGoogleDrive.settings import logfile, emailparameters, tempfilename 
+from AutoUploaderGoogleDrive.settingsValidator import settingsLoader
+
 
 #Module for the creation and population of a temporary W3C Validated HTML file
-#containing an a table to be compiled using AutoUploaderGoogleDrive.upload.encode_message 
+#containing an a table to be compiled using AutoUploaderGoogleDrive.upload.encode_message :
+settings = settingsLoader()
 
-
+logfile = settings['logfile']
 logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
 
 def setup_temp_file(tempfilename):
@@ -50,7 +52,7 @@ def setup_temp_file(tempfilename):
     htmlfile.write(message)
     htmlfile.close
     htmlfile = open(tempfilename, 'a')
-    for EachHeader in emailparameters:
+    for EachHeader in settings['emailParameters']:
         TableHeader = """
     <th>%s</th>""" % (EachHeader)
         htmlfile.write(TableHeader)
@@ -80,11 +82,17 @@ def addentry(tempfilename, JData):
     RowTag = """
   <tr>"""
     append.write(RowTag)
-    for EachEntry in emailparameters:          
-        Entry = """
+    for EachEntry in settings['emailParameters']:          
+        try:
+            Entry = """
     <td>%s</td>""" % JData[EachEntry]
-        logging.debug("TABLE: Entry added: %s" % EachEntry)
-        append.write(Entry)
+            logging.debug("TABLE: Entry added: %s" % EachEntry)
+            append.write(Entry)
+        except(UnicodeEncodeError):
+            Entry = """
+    <td>UnicodeEncodeError</td>"""
+            logging.debug("TABLE: ERROR: Could load entry.")
+            append.write(Entry)
     RowEnd = """
   </tr>"""
     append.close()
