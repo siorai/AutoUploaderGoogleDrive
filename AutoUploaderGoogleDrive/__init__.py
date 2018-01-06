@@ -1,54 +1,85 @@
 import os
-import httplib2
+import argparse
 import base64
 import logging
-import argparse
+import pprint
 import re
+import tempfile
 import time
-import json
-
-from sys import argv
 
 from apiclient import discovery
 from apiclient.http import MediaFileUpload
 
 from AutoUploaderGoogleDrive.auth import Authorize
-from AutoUploaderGoogleDrive.rules import *
-#from AutoUploaderGoogleDrive.settings import *
-from AutoUploaderGoogleDrive.temp import *
+from AutoUploaderGoogleDrive.rules import Sort
+from AutoUploaderGoogleDrive.temp import (setup_temp_file, addentry,
+                                          finish_html)
 from AutoUploaderGoogleDrive.settingsValidator import settingsLoader
+
 import rarfile
-from rarfile import Error, BadRarFile, NeedFirstVolume
 
 from email.mime.text import MIMEText
 
-
-
 __author__ = 'siorai@gmail.com (Paul Waldorf)'
 
+
 class main(object):
-    try:
-        script, localFolder = argv
-    except:
-        print("arg not found")
-    #logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
-    #with open("settingsNew.json", 'rb') as SJ:
-    #    settings = json.load(SJ)
-    def __init__(self, localFolder=None):
+
+    def __init__(self):
         """
         ........ does a lot......
 
         ........ to be added soon.....
         """
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-u",
+                            help="File or folder to be uploaded")
+        parser.add_argument(
+                            "--overrideFolder",
+                            help="Override folder settings with specified ID")
+        parser.add_argument(
+                            "--fetchIDs",
+                            help=("Fetch folderIDs from"
+                                  " a specified parent folder"))
+        cArgs = parser.parse_args()
+        if cArgs.overrideFolder:
+            print("Overriding settings.")
+            print("Uploading to %s" % cArgs.overrideFolder)
+        self.cArgs = cArgs
         self.settings = settingsLoader()
-        logging.basicConfig(filename=self.settings['logfile'],level=logging.DEBUG,format='%(asctime)s %(message)s')
+        try:
+            if self.cArgs.fetchIDs:
+                self.printFolderIDs(self.cArgs.fetchIDs)
+                quit()
+        except(AttributeError):
+            pass
+        if self.cArgs.u:
+            self.localFolder = self.cArgs.u
+        # if localFolder:
+        #    self.localFolder = localFolder
+        try:
+            logFileName = (tempfile.NamedTemporaryFile
+                           (dir=self.settings['logPath'],
+                            prefix=os.getenv('TR_TORRENT_NAME'),
+                            delete=False))
+        except(TypeError):
+            try:
+                logFileName = (tempfile.NamedTemporaryFile
+                               (dir=self.settings['logPath'],
+                                prefix=self.localFolder.rsplit(os.sep)[-2],
+                                delete=False))
+            except(IndexError):
+                logFileName = (tempfile.NamedTemporaryFile
+                               (dir=self.settings['logPath'],
+                                prefix=self.localFolder,
+                                delete=False))
+        logging.basicConfig(stream=logFileName, level=logging.DEBUG)
         http = Authorize()
-        if localFolder:
-            self.localFolder = localFolder
         self.serviceGmail = discovery.build('gmail', 'v1', http=http)
         self.serviceDrive = discovery.build('drive', 'v2', http=http)
         self.JSONResponseList = []
         self.extractedFilesList = []
+        self.isSingleFileUpload = False
         try:
             logging.debug("INIT: ENV: Attempting to load ENV variables")
             self.bt_name = os.getenv('TR_TORRENT_NAME')
@@ -57,50 +88,64 @@ class main(object):
                 logging.debug("INIT: ENV: Failed find required env.")
                 logging.debug("INIT: ENV: Attempting localFolder check")
             else:
-                logging.debug("INIT: ENV: Recieved %s as Torrent Name." % self.bt_name)
-                logging.debug("INIT: ENV: Recieved %s as Torrent Directory." % self.bt_dir)
-            
-            logging.debug("INIT: Extrapolating file path from %s, %s" % (self.bt_name, self.bt_dir))
+                logging.debug("INIT: ENV: Recieved %s as Torrent Name." %
+                              self.bt_name)
+                logging.debug("INIT: ENV: Recieved %s as Torrent Directory." %
+                              self.bt_dir)
+
+            logging.debug("INIT: Extrapolating file path from %s, %s" %
+                          (self.bt_name, self.bt_dir))
+
             self.fullFilePaths = os.path.join(self.bt_dir, self.bt_name)
-            logging.debug("INIT: Filepath Directory is %ss" % self.fullFilePaths)
+            logging.debug("INIT: Filepath Directory is %s" %
+                          self.fullFilePaths)
             self.autoExtract(self.fullFilePaths)
-            if self.settings['enableSorting'] == True:
-                updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+            if self.settings['enableSorting'] is True:
+                updategoogledrivedir = Sort(directory=self.bt_name,
+                                            fullPath=self.fullFilePaths)
                 logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
-            else: 
-                updategoogledrivedir = ["0", googledrivedir]
+            else:
+                updategoogledrivedir = ["0", self.settings.googledrivedir]
                 logging.debug("***SORTSKIPPED*** %s" % updategoogledrivedir)
             self.destgoogledrivedir = updategoogledrivedir[1]
+            logging.debug("Single file check starting")
+            if os.path.isfile(self.fullFilePaths):
+                    logging.debug("Single file: Found for %s" %
+                                  self.fullFilePaths)
+                    self.singleFileUpload(self.fullFilePaths,
+                                          folderOverride=self.destgoogledrivedir)
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
             logging.debug("Creating dictionary of files: %s" % self.FilesDict)
             logging.debug('Information pulled successfully')
-        except(AttributeError):
+            logging.debug("Single file check starting")
+        except(AttributeError) as err:
+            print(err)
             logging.debug("MAIN: Single file check")
-            
-            try:
-                if os.path.isfile(self.localFolder) == True:
-                    logging.debug("MAIN: Single file: Found for %s" % self.localFolder)
-                    self.singleFileUpload(self.localFolder) 
-            except(AttributeError):
-                print("localFolder not found")
+            if os.path.isfile(self.localFolder):
+                self.singleFileUpload(self.localFolder)
             self.fullFilePaths = self.localFolder
             self.folderName = self.fullFilePaths.rsplit(os.sep)
             logging.debug("Using %s" % self.folderName)
-            self.bt_name = self.folderName[-2]
+            try:
+                self.bt_name = self.folderName[-2]
+            except(IndexError):
+                self.bt_name = self.localFolder
             logging.debug("Using %s" % self.bt_name)
             self.autoExtract(self.fullFilePaths)
-            if self.settings['enableSorting'] == True:
-                updategoogledrivedir = Sort(directory=self.bt_name, fullPath=self.fullFilePaths)
+            if self.settings['enableSorting'] is True:
+                updategoogledrivedir = Sort(directory=self.bt_name,
+                                            fullPath=self.fullFilePaths)
                 logging.debug("***STARTSORT*** %s" % updategoogledrivedir)
             else:
-                updategoogledrivedir = ["0", googledrivedir]
+                updategoogledrivedir = ["0", self.settings['googledrivedir']]
                 logging.debug("***SORTSKIPPED*** %s" % updategoogledrivedir)
             self.destgoogledrivedir = updategoogledrivedir[1]
             self.FilesDict = self.createDirectoryStructure(self.fullFilePaths)
         
         logging.debug("Using %s as FilesDict" % self.FilesDict)
         self.uploadPreserve(self.FilesDict, Folder_ID=self.destgoogledrivedir)
-        tempfilename = '/var/tmp/transmissiontemp/transmission.%s.%s.html' % (self.bt_name, os.getpid())
+        tempfilename = ('/var/tmp/transmissiontemp/transmission.%s.%s.html' %
+                        (self.bt_name, os.getpid()))
         setup_temp_file(tempfilename)
         for EachEntry in self.JSONResponseList:
             addentry(tempfilename, EachEntry)
@@ -108,27 +153,45 @@ class main(object):
         email_subject = ("%s has finished downloading.") % self.bt_name
         email_message = self.encodeMessage(email_subject, tempfilename)
         self.sendMessage(email_message)
-        logging.debug("Contents of extractFilesList %s" % self.extractedFilesList)
+        logging.debug("Contents of extractFilesList %s" %
+                      self.extractedFilesList)
         self.cleanUp()
 
-    def singleFileUpload(self, localFile):
+    def singleFileUpload(self, localFile, folderOverride=None):
+        self.isSingleFileUpload = True
         logging.debug("MAIN: SINGLE: Found: %s" % localFile)
         FilePath = os.path.abspath(localFile)
         FileTitle = os.path.basename(localFile)
-        if self.settings['enableDrivePasteBin'] == True:
-            logging.debug("MAIN: SINGLE: Special folder flag returned True.")
-            logging.debug("MAIN: SINGLE: Setting remote directory to pastingbin")
-            remoteDir = self.settings['pastingBinDir']
-            email_subject = ("Single file: %s has been uploaded to your pastebin" % FileTitle)
+        if folderOverride:
+            logging.debug("MAIN: SINGLE: Single file torrent found")
+            remoteDir = folderOverride
+            email_subject = ("Single file torrent: %s has " % FileTitle +
+                             "sorted")
         else:
-            logging.debug("MAIN: SINGLE: Special folder flag returned False.")
-            logging.debug("MAIN: SINGLE: Setting remote directory to default.")
-            remoteDir = self.settings['googleDriveDir']
-            email_subject = ("Single file: %s has been uploaded to your default directory")
+            if self.settings['enableDrivePasteBin'] is True:
+                logging.debug("MAIN: SINGLE: pastebin flag returned True.")
+                logging.debug("MAIN: SINGLE: Setting remote directory to " +
+                              "pastebin")
+                remoteDir = self.settings['pastingBinDir']
+                email_subject = ("Single file: %s has been " % FileTitle +
+                                 "added to your pastebin")
+            else:
+                logging.debug("MAIN: SINGLE: pastebin flag returned False.")
+                logging.debug("MAIN: SINGLE: Using default dir.")
+                remoteDir = self.settings['googleDriveDir']
+                email_subject = ("Single file: %s has been  " % FileTitle +
+                                 "add to the default directory")
         logging.debug("MAIN: SINGLE: Uploading to %s" % remoteDir)
-        response = self.uploadToGoogleDrive(FilePath, FileTitle, Folder_ID=remoteDir)
+        response = self.uploadToGoogleDrive(FilePath,
+                                            FileTitle,
+                                            Folder_ID=remoteDir)
         self.JSONResponseList.append(response)
-        tempfilename = self.tempfilename
+        temphtmlfile = (tempfile.NamedTemporaryFile
+                        (dir=self.settings['logPath'],
+                         prefix=FileTitle,
+                         suffix=".html",
+                         delete=False))
+        tempfilename = temphtmlfile.name
         setup_temp_file(tempfilename)
         for EachResponse in self.JSONResponseList:
             addentry(tempfilename, EachResponse)
@@ -138,19 +201,16 @@ class main(object):
         print("Shortened URL: %s" % response['alt_tiny'])
         quit()
 
-
-
     def createDirectoryStructure(self, rootdir):
         """
         Creates dictionary using os.walk to be used for keeping track
         of the local torrent's file structure to recreate it on Google Drive
-        Any folders it finds, it creates a new subdictionary inside, however 
-        when it locates files adds a list to each entry the first of which is 'File'
-        and the second of which is the full path/to/file to be used by
+        Any folders it finds, it creates a new subdictionary inside, however
+        when it locates files adds a list to each entry the first of which is
+        'File' and the second of which is the full path/to/file to be used by
         self.uploadToGoogleDrive.
 
-        Args:
-            rootdir: string. path/to/directory to be recreated.
+        :param rootdir: string. path/to/directory to be recreated.
 
         Returns:
             dir: dictionary. Dictionary containing directory file structure and
@@ -176,12 +236,12 @@ class main(object):
 
     def autoExtract(self, directory):
         """
-        Function for searching through the specified directory for rar 
+        Function for searching through the specified directory for rar
         archives by performing a simple check for each file in the dir.
         If one is found, it attempts to extract.
 
         Files that are extracted get appended to self.extractedFilesList
-        as a way to keep track of them. 
+        as a way to keep track of them.
 
         Once all files in the directory are either uploaded (or skipped if
         they are archives), the extracted files are deleted by the cleanUP
@@ -203,20 +263,21 @@ class main(object):
                             timeToExtract = time.time() - startExtraction
                             for EachExtractedFile in rf.namelist():
                                 self.extractedFilesList.append(
-                                                    {
-                                                    'FileList': EachExtractedFile,
-                                                    'Path': path,
-                                                    'TimeToUnrar': timeToExtract
-                                                     }
+                                     {
+                                        'FileList': EachExtractedFile,
+                                        'Path': path,
+                                        'TimeToUnrar': timeToExtract
+                                     }
                                                     )
-                            logging.debug("UNRAR: Extraction for %s took %s." % (filepath, timeToExtract))
-                    except: 
+                            logging.debug("UNRAR: Extraction for %s took %s." %
+                                          (filepath, timeToExtract))
+                    except:
                         logging.debug("UNRAR: Moving onto next file.")
 
     def cleanUp(self):
         """
-        CleanUp script that removes each of the files that was previously extracted
-        from archives and deletes from the local hard drive.
+        CleanUp script that removes each of the files that was previously
+        extracted from archives and deletes from the local hard drive.
 
         Args:
             None
@@ -228,8 +289,9 @@ class main(object):
             logging.debug("CLEANUP: Deleting %s." % FilePath)
             os.remove(FilePath)
         if self.settings['deleteTempHTML'] is True:
-            logging.debug("CLEANUP: Deleting HTML File: %s" % tempfilename)
-            os.remove(tempfilename)
+            logging.debug("CLEANUP: Deleting HTML File: %s" %
+                          self.settings.tempfilename)
+            os.remove(self.settings.tempfilename)
         logging.debug("CLEANUP: Cleanup completed.")
 
     def fetchTorrentFile(self):
@@ -238,7 +300,7 @@ class main(object):
 
         Args:
             bt_name: string. Name of the torrent
-            
+
         Returns:
             filepath: /path/to/file to be parsed for trackerinfo
         """
@@ -248,7 +310,7 @@ class main(object):
             for EachTorrent in files:
                 if bt_name in EachTorrent:
                     filepath = os.path.join(path, EachTorrent)
-                    return filepath 
+                    return filepath
 
     def getIDs(self):
         """
@@ -261,7 +323,6 @@ class main(object):
         IDs = service.files().generateIds().execute()
         return IDs['ids']
 
-
     def createFolder(self, folderName, parents=None):
         """
         Creates folder on Google Drive.
@@ -271,17 +332,16 @@ class main(object):
             parents: Unique ID where folder is to be put inside of
 
         Returns:
-            id: unique folder ID 
+            id: unique folder ID
         """
 
         service = self.serviceDrive
         body = {'title': folderName,
-                'mimeType' : 'application/vnd.google-apps.folder'
-        }
+                'mimeType': 'application/vnd.google-apps.folder'}
         if parents:
-            body['parents'] = [{'id' : parents}]
+            body['parents'] = [{'id': parents}]
         response = service.files().insert(body=body).execute()
-        if self.settings['enableNonDefaultPermissions'] == True:
+        if self.settings['enableNonDefaultPermissions'] is True:
             fileID = response['id']
             self.setPermissions(fileID)
         return response['id']
@@ -293,11 +353,11 @@ class main(object):
         Args:
             subject: string. Subject of email
             tempfilename: string. HTML Table create from temp.py
-            message_text: string. optional email text in addition to 
-                supplied HTML table    
+            message_text: string. optional email text in addition to
+                supplied HTML table
         Returns:
             A base64url encoded email object.
-        """    
+        """
         readhtml = open(tempfilename, 'r')
         html = readhtml.read()
         message = MIMEText(html, 'html')
@@ -314,23 +374,22 @@ class main(object):
             message: base64url encoded email object.
 
         Returns:
-            JSON response from google.
+            JSON response from google.D
         """
         service = self.serviceGmail
-        response = service.users().messages().send(userId='me', body=message).execute()
+        response = service.users().messages().send(userId='me',
+                                                   body=message).execute()
         return response
-
-        
 
     def uploadPreserve(self, FilesDict, Folder_ID=None):
         """
         Uploads files in FilesDict preserving the local file structure
         as shown by FilesDict created from getDirectoryStructure.
-        Appends each JSON response from google return as JSON Data into 
+        Appends each JSON response from google return as JSON Data into
         self.JSONResponse list.
 
         Args:
-            FilesDict: dict. Dictionary representation of files and structure 
+            FilesDict: dict. Dictionary representation of files and structure
                 to be created on google drive
             Folder_ID: string. Unique resource ID for folder to be uploaded to.
 
@@ -345,68 +404,78 @@ class main(object):
                     refilter = re.compile('.*\\.r.*.*\\Z(?ms)')
                     if refilter.match(fullPathToFile):
                         logging.debug("%s skipped." % fullPathToFile)
-                    else:    
-                        response = self.uploadToGoogleDrive(fullPathToFile, FF, Folder_ID=Folder_ID)
+                    else:
+                        response = (self.uploadToGoogleDrive(
+                                    fullPathToFile, FF, Folder_ID=Folder_ID))
                         self.JSONResponseList.append(response)
             except(KeyError):
                 subfolder = FilesDict[FF]
                 subfolder_id = self.createFolder(FF, parents=Folder_ID)
                 self.uploadPreserve(subfolder, Folder_ID=subfolder_id)
 
-
     def uploadToGoogleDrive(self, FilePath, FileTitle, Folder_ID=None):
         """
-        Performs upload to Google Drive. 
+        Performs upload to Google Drive.
 
         Args:
             FilePath: string. Path/To/File/
             FileTitle: string. Passed to the body as the name of the file.
             Folder_ID: string. Unique Folder_ID as assigned by Google Drive.
 
-        Returns:        
+        Returns:
             Response in the form of JSON data from Google's REST.
 
-        """ 
+        """
         service = self.serviceDrive
         body = {
                 'title': FileTitle
         }
         if Folder_ID:
-            body['parents'] = [{'id' : Folder_ID}]
+            body['parents'] = [{'id': Folder_ID}]
         startUpload = time.time()
-        media = MediaFileUpload(FilePath, chunksize=self.settings['chunkSize'], resumable=True)
+        if self.cArgs.overrideFolder:
+            body['parents'] = [{'id': self.cArgs.overrideFolder}]
+        media = MediaFileUpload(FilePath,
+                                chunksize=self.settings['chunkSize'],
+                                resumable=True)
         response = service.files().insert(body=body, media_body=media)
-        fileSize = os.path.getsize(FilePath)
+        # fileSize = os.path.getsize(FilePath)
         reply = None
         chunkNumber = 0
         while reply is None:
-            chunkStart = time.time()
+            # chunkStart = time.time()
             status, reply = response.next_chunk()
             if status:
                 chunkNumber += 1
-                logging.debug("UPLOAD: %s is %f%% complete." % (FileTitle, status.progress()*100))
-                chunkEnd = time.time()
-                #logging.debug("UPLOAD: Chunk %i of %i." % (chunkNumber, chunkEnd - chunkStart))
-        print reply
-        if self.settings['enableNonDefaultPermissions'] == True:
+                logging.debug("UPLOAD: %s is %f%% complete." %
+                              (FileTitle, status.progress()*100))
+                # chunkEnd = time.time()
+                # logging.debug("UPLOAD: Chunk %i of %i." %
+                #               (chunkNumber, chunkEnd - chunkStart))
+        if self.settings['showAPIResponse'] is True:
+            pprint.pprint(reply)
+        if self.settings['enableNonDefaultPermissions'] is True:
             fileID = reply['id']
             self.setPermissions(fileID)
         finishUpload = time.time()
         uploadTime = finishUpload - startUpload
         reply['timeToUpload'] = uploadTime
-        if self.settings['shortenURL'] == True:
+        if ((self.settings['shortenURL'] or
+             self.isSingleFileUpload is True)):
             reply['alt_tiny'] = self.shortenUrl(reply['alternateLink'])
         logging.debug("UPLOAD: %s uploaded. Took %d" % (FileTitle, uploadTime))
         return reply
 
     def setPermissions(self, file_id):
         """
-        Sets the permissions for the file as long as settings.enableNonDefaultPermissions
-        is set to True. If set to True, the permissions listed there will be applied
-        after each file is uploaded to Google Drive.
+        Sets the permissions for the file as long as
+        settings.enableNonDefaultPermissions is set to True. If set to True,
+        the permissions listed there will be applied after each file is
+        uploaded to Google Drive.
 
         Args:
-            file_id: string. Unique File ID assigned by google after file is uploaded
+            file_id: string. Unique File ID assigned by google after file is
+            uploaded
         """
         service = self.serviceDrive
         newPermissions = {
@@ -430,7 +499,7 @@ class main(object):
         http = Authorize()
         service = discovery.build('urlshortener', 'v1', http=http)
         url = service.url()
-        body =  {
+        body = {
             'longUrl': URL
                 }
         response = url.insert(body=body).execute()
@@ -439,7 +508,24 @@ class main(object):
         logging.debug("URLSHRINK: %s" % short_url)
         return short_url
 
+    def printFolderIDs(self, parentID):
+        """
+        Prints a list of the folders and their folderIDs
+        to the user for use by '--folderId' CLI argument.
 
-if __name__ == '__main__':
-    script, localFolder = argv
-    AutoUploaderGoogleDrive(localFolder=localFolder)
+        Args:
+            parentID: string. ID of folder containing folders
+            to list, defaults to root directory
+        """
+        http = Authorize()
+        service = discovery.build('drive', 'v2', http=http)
+        param = {}
+        if parentID:
+            param['q'] = ("mimeType='application/vnd.google-apps.folder' " +
+                          "and (trashed = false) " +
+                          "and ('%s' in parents)" % parentID)
+        folderList = service.files().list(**param).execute()
+        for eachFolder in folderList['items']:
+            print("FolderId: %s " % eachFolder['id'] +
+                  "Last Modified: %s " % eachFolder['modifiedDate'] +
+                  "Folder Name: %s" % eachFolder['title'])

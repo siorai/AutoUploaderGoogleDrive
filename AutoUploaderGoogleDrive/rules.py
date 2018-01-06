@@ -2,21 +2,17 @@ import os
 import fnmatch
 import pprint
 import logging
-#from AutoUploaderGoogleDrive.settings import categoriesDictSettings, torrentFileDirectory, googledrivedir, logfile
 from AutoUploaderGoogleDrive.settingsValidator import settingsLoader
 
-
-#logging.basicConfig(filename=logfile,level=logging.DEBUG,format='%(asctime)s %(message)s')
 
 def Sort(directory=None, fullPath=None):
     """
     ....... yep. you guessed it. I'll explain this a bit more later as well....
-    
+
     ....... soon though! <3 ........
     """
-    
+
     settings = settingsLoader()
-    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%s(asctime)s %(message)s')
     global listOfFiles
     global torrentFileName
     listOfFiles = getListOfFiles(fullPath)
@@ -26,6 +22,15 @@ def Sort(directory=None, fullPath=None):
     setDict = settings['categoriesDictSettings']
     try:
         CategoriesDict = {
+            'Anime': {
+                'folderId': setDict['Anime']['folderId'],
+                'Rule': {
+                    'matchTracker': matchTracker('Anime')
+                },
+                'matches': {
+                    'matchTracker': setDict['Anime']['matches']['matchTracker']
+                }
+            },
             'Music': {
                 'folderId': setDict['Music']['folderId'],
                 'Rule': {
@@ -34,42 +39,42 @@ def Sort(directory=None, fullPath=None):
                 },
                 'matches': {
                     'matchTracker': setDict
-                        ['Music']['matches']['matchTracker'],
+                    ['Music']['matches']['matchTracker'],
                     'matchContentExtention': setDict
-                        ['Music']['matches']['matchContentExtention']
+                    ['Music']['matches']['matchContentExtention']
                 }
             },
             'TV':   {
                 'folderId': setDict
-                    ['TV']['folderId'],
+                ['TV']['folderId'],
                 'Rule': {
                     'matchTracker': matchTracker('TV'),
                     'matchPattern': matchPattern('TV')
                 },
                 'matches': {
                     'matchTracker': setDict
-                        ['TV']['matches']['matchTracker'],
+                    ['TV']['matches']['matchTracker'],
                     'matchExpression': setDict
-                        ['TV']['matches']['matchExpression']
+                    ['TV']['matches']['matchExpression']
                     }
             },
             'Movies':   {
                 'folderId': setDict
-                    ['Movies']['folderId'],
-                'Rule' : {
+                ['Movies']['folderId'],
+                'Rule': {
                     'matchTracker': matchTracker('Movies'),
                     'matchTvCheck': matchIsNotTV(),
                     'matchIsNotMusic': matchIsNotMusic()
                 },
                 'matches': {
                     'matchTracker': setDict
-                        ['Movies']['matches']['matchTracker']
+                    ['Movies']['matches']['matchTracker']
                 }
             },
             'XXX':  {
                 'folderId': setDict
-                    ['XXX']['folderId'],
-                'Rule' : {
+                ['XXX']['folderId'],
+                'Rule': {
                     'matchTracker': matchTracker('XXX')
                 },
                 'matches': {
@@ -108,8 +113,9 @@ def Sort(directory=None, fullPath=None):
         return setFolder_ID
     except:
         logging.debug("SORT: ERROR: Unable to sort, using default")
-        setFolder_ID = [ "Default Directory", settings['googleDriveDir']] 
+        setFolder_ID = ["Default Directory", settings['googleDriveDir']]
         return setFolder_ID
+
 
 def matchIsNotMusic():
     """
@@ -128,10 +134,11 @@ def matchIsNotMusic():
     else:
         return True
 
+
 def matchTracker(category):
     """
     Rule for matching the tracker in the Torrent File by comparing
-    the first line in the torrent and searching for each tracker 
+    the first line in the torrent and searching for each tracker
     listed in the settings.
 
     Args:
@@ -141,11 +148,13 @@ def matchTracker(category):
         False if no match
     """
     settings = settingsLoader()
-    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%s(asctime)s %(message)s')
     with open(torrentFileName, 'r') as TF:
         trackerInfo = TF.readline().split()[0]
     logging.debug("SORT: matchTracker: %s" % trackerInfo)
-    trackerList = settings['categoriesDictSettings'][category]['matches']['matchTracker']
+    trackerList = (settings['categoriesDictSettings']
+                           [category]
+                           ['matches']
+                           ['matchTracker'])
     logging.debug("SORT: matchTracker: %s" % trackerList)
     for EachTracker in trackerList:
         logging.debug("SORT:matchTracker: %s" % EachTracker)
@@ -153,18 +162,18 @@ def matchTracker(category):
             return True
     return False
 
+
 def fetchTorrentFile(directory):
     """
     Fetches the TorrentFile by matching the name to 'directory'
-    
+
     Args:
-        directory: string. Directory of files that the torrentfile 
+        directory: string. Directory of files that the torrentfile
             belongs to
     Return:
         filepath: string. /path/to/filename/of/Torrent.Torrent
     """
     settings = settingsLoader()
-    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%s(asctime)s %(message)s')
     fullFilePaths = directory
     folderName = fullFilePaths.rsplit(os.sep)
     logging.debug("SORT: fetchTorrentFile: Using %s" % folderName)
@@ -176,11 +185,12 @@ def fetchTorrentFile(directory):
                 filepath = os.path.join(path, EachTorrent)
                 return filepath
 
+
 def matchIsNotTV():
     """
     Rule for making sure the contents of the directory do not match
     the pattern for TV category.
-    
+
     (Primarily used to ensure there are no Season Episode indicators
     in Movies)
 
@@ -196,9 +206,10 @@ def matchIsNotTV():
     else:
         return True
 
+
 def matchExt(category):
     """
-    Rule for matching file extentions based on what's list in the settings, 
+    Rule for matching file extentions based on what's list in the settings,
     for the category supplied.
 
     Args:
@@ -208,20 +219,25 @@ def matchExt(category):
         False if no match
     """
     settings = settingsLoader()
-    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%s(asctime)s %(message)s')
-    categoryExtention = settings['categoriesDictSettings'][category]['matches']['matchContentExtention']
+    categoryExtention = (settings['categoriesDictSettings']
+                                 [category]
+                                 ['matches']
+                                 ['matchContentExtention'])
     logging.debug("SORT: matchExt: %s" % categoryExtention)
     for EachExtention in categoryExtention:
         logging.debug("SORT: matchExt: trying %s" % EachExtention)
         for EachFile in listOfFiles:
-            logging.debug("SORT: matchExt: trying %s inside of %s" % (EachExtention, EachFile))
+            logging.debug("SORT: matchExt: trying %s inside of %s" % (
+                EachExtention, EachFile))
             if fnmatch.fnmatch(EachFile, EachExtention):
                 return True
     return False
-       
+
+
 def matchPattern(category):
     """
-    Rule for matching a Pattern listed in the settings, for the category supplied
+    Rule for matching a Pattern listed in the settings, for the
+    category supplied
 
     Args:
         category: string. Category from CategoriesDict
@@ -230,16 +246,20 @@ def matchPattern(category):
         False if no match
     """
     settings = settingsLoader()
-    logging.basicConfig(filename=settings['logfile'],level=logging.DEBUG,format='%s(asctime)s %(message)s')
-    categoryPattern = settings['categoriesDictSettings'][category]['matches']['matchExpression']
+    categoryPattern = (settings['categoriesDictSettings']
+                               [category]
+                               ['matches']
+                               ['matchExpression'])
     logging.debug("SORT: matchPattern: using %s" % categoryPattern)
     for EachPattern in categoryPattern:
         logging.debug("SORT: matchPattern: searching for %s" % EachPattern)
         for EachFile in listOfFiles:
-            logging.debug("SORT: matchPattern: searching for %s in %s" % (EachPattern, EachFile))
+            logging.debug("SORT: matchPattern: searching for %s in %s" %
+                          (EachPattern, EachFile))
             if fnmatch.fnmatchcase(EachFile, EachPattern):
                 return True
-    return False 
+    return False
+
 
 def getListOfFiles(directory):
     """
@@ -248,7 +268,7 @@ def getListOfFiles(directory):
     Args:
         directory: string. Directory to use to create the list of files
     Returns:
-        listOfFiles: list. ....but really, it returns a 20 foot block of cheese.
+        listOfFiles: list. ...but really, it returns a 20 foot block of cheese.
     """
     listOfFiles = []
     for path, dirs, files in os.walk(directory):
