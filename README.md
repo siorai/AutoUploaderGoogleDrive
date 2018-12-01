@@ -203,26 +203,3 @@ Depends on Dependencies....
 
 
 
-Getting setup:
---------------
-
-open AutoUploaderGoogleDrive/settings.py in your favorite text editor and configure it. 
-
-After which commandline usage should be:
-
-Directories:
-
-::
-
-    AutoUploaderGoogleDrive /path/to/directory/ 
-
-::
-
-Files:
-
-::
-
-    AutoUploaderGoogleDrive /path/to/file.file
-    
-::
-
